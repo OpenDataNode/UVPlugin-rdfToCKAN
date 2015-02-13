@@ -1,8 +1,6 @@
 package eu.unifiedviews.plugins.loader.rdftockan;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,15 +30,15 @@ import org.slf4j.LoggerFactory;
 
 import eu.unifiedviews.dataunit.DataUnit;
 import eu.unifiedviews.dataunit.DataUnitException;
-import eu.unifiedviews.dataunit.files.FilesDataUnit;
+import eu.unifiedviews.dataunit.rdf.RDFDataUnit;
 import eu.unifiedviews.dpu.DPU;
 import eu.unifiedviews.dpu.DPUContext;
 import eu.unifiedviews.dpu.DPUException;
-import eu.unifiedviews.helpers.dataunit.fileshelper.FilesHelper;
+import eu.unifiedviews.helpers.dataunit.rdfhelper.RDFHelper;
 import eu.unifiedviews.helpers.dataunit.resourcehelper.Resource;
 import eu.unifiedviews.helpers.dataunit.resourcehelper.ResourceConverter;
 import eu.unifiedviews.helpers.dataunit.resourcehelper.ResourceHelpers;
-import eu.unifiedviews.helpers.dataunit.virtualpathhelper.VirtualPathHelpers;
+import eu.unifiedviews.helpers.dataunit.virtualgraphhelper.VirtualGraphHelpers;
 import eu.unifiedviews.helpers.dpu.config.AbstractConfigDialog;
 import eu.unifiedviews.helpers.dpu.config.ConfigDialogProvider;
 import eu.unifiedviews.helpers.dpu.config.ConfigurableBase;
@@ -56,8 +54,6 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
     public static final String PROXY_API_TOKEN = "token";
 
     public static final String PROXY_API_TYPE = "type";
-
-    public static final String PROXY_API_TYPE_FILE = "FILE";
 
     public static final String PROXY_API_TYPE_RDF = "RDF";
 
@@ -75,8 +71,8 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
 
     private static final Logger LOG = LoggerFactory.getLogger(RdfToCkan.class);
 
-    @DataUnit.AsInput(name = "filesInput")
-    public FilesDataUnit filesInput;
+    @DataUnit.AsInput(name = "rdfInput")
+    public RDFDataUnit rdfInput;
 
     public RdfToCkan() {
         super(RdfToCkanConfig_V1.class);
@@ -88,7 +84,7 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
         String longMessage = String.valueOf(config);
         dpuContext.sendMessage(DPUContext.MessageType.INFO, shortMessage, longMessage);
 
-        if (filesInput == null) {
+        if (rdfInput == null) {
             throw new DPUException("No input data unit for me, exiting");
         }
 
@@ -135,20 +131,20 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
         JsonBuilderFactory factory = Json.createBuilderFactory(Collections.<String, Object> emptyMap());
         CloseableHttpClient client = HttpClients.createDefault();
         try {
-            Set<FilesDataUnit.Entry> files;
+            Set<RDFDataUnit.Entry> graphs;
             try {
-                files = FilesHelper.getFiles(filesInput);
+                graphs = RDFHelper.getGraphs(rdfInput);
             } catch (DataUnitException ex1) {
                 throw new DPUException("Could not iterate files input", ex1);
             }
-            for (FilesDataUnit.Entry file : files) {
+            for (RDFDataUnit.Entry graph : graphs) {
                 CloseableHttpResponse responseUpdate = null;
                 try {
-                    String storageId = VirtualPathHelpers.getVirtualPath(filesInput, file.getSymbolicName());
+                    String storageId = VirtualGraphHelpers.getVirtualGraph(rdfInput, graph.getSymbolicName());
                     if (storageId == null || storageId.isEmpty()) {
-                        storageId = file.getSymbolicName();
+                        storageId = graph.getSymbolicName();
                     }
-                    Resource resource = ResourceHelpers.getResource(filesInput, file.getSymbolicName());
+                    Resource resource = ResourceHelpers.getResource(rdfInput, graph.getSymbolicName());
                     resource.setName(storageId);
                     JsonObjectBuilder resourceBuilder = buildResource(factory, resource);
                     if (existingResources.containsKey(storageId)) {
@@ -162,7 +158,7 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
                             .addTextBody(PROXY_API_PIPELINE_ID, String.valueOf(config.getPipelineId()), ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_USER_ID, config.getUserId(), ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_TOKEN, config.getToken(), ContentType.TEXT_PLAIN.withCharset("UTF-8"))
-                            .addTextBody(PROXY_API_TYPE, PROXY_API_TYPE_FILE, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
+                            .addTextBody(PROXY_API_TYPE, PROXY_API_TYPE_RDF, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_STORAGE_ID, storageId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_DATA, resourceBuilder.build().toString(), ContentType.APPLICATION_JSON.withCharset("UTF-8"));
 
@@ -171,7 +167,6 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
                     } else {
                         builder.addTextBody(PROXY_API_ACTION, CKAN_API_RESOURCE_CREATE, ContentType.TEXT_PLAIN.withCharset("UTF-8"));
                     }
-                    builder.addBinaryBody(PROXY_API_ATTACHMENT_NAME, new File(URI.create(file.getFileURIString())), ContentType.DEFAULT_BINARY, storageId);
                     HttpEntity entity = builder.build();
                     httpPost.setEntity(entity);
 

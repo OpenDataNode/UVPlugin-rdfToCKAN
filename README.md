@@ -1,16 +1,16 @@
-# L-FilesToLocalFS #
+# L-RdfToCkan #
 ----------
 
 ###General###
 
 |                              |                                                               |
 |------------------------------|---------------------------------------------------------------|
-|**Name:**                     |L-FilesToLocalFS                                             |
-|**Description:**              |Loads files to the specified local host directory. |
+|**Name:**                     |L-RdfToCkan                                             |
+|**Description:**              |Loads graphs metadata to the specified CKAN instance. |
 |                              |                                                               |
-|**DPU class name:**           |FilesToLocalFS     | 
-|**Configuration class name:** |FilesToLocalFSConfig_V1                           |
-|**Dialogue class name:**      |FilesToLocalFSVaadinDialog | 
+|**DPU class name:**           |RdfToCkan     | 
+|**Configuration class name:** |RdfToCkanConfig_V1                           |
+|**Dialogue class name:**      |RdfToCkanVaadinDialog | 
 
 ***
 
