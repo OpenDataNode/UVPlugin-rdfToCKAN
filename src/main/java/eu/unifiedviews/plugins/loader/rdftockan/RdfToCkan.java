@@ -69,6 +69,10 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
 
     public static final String CKAN_API_RESOURCE_CREATE = "resource_create";
 
+    public static final String CONFIGURATION_SECRET_TOKEN = "secret_token";
+
+    public static final String CONFIGURATION_CATALOG_API_LOCATION = "catalogApiLocation";
+
     private static final Logger LOG = LoggerFactory.getLogger(RdfToCkan.class);
 
     @DataUnit.AsInput(name = "rdfInput")
@@ -83,21 +87,17 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
         String shortMessage = this.getClass().getSimpleName() + " starting.";
         String longMessage = String.valueOf(config);
         dpuContext.sendMessage(DPUContext.MessageType.INFO, shortMessage, longMessage);
-//        Map<String, String> environment = dpuContext.getEnvironment();
-//        String secretToken = environment.get(SECRET_TOKEN);
-//      if (environment.get(SECRET_TOKEN) == null || environment.get(SECRET_TOKEN).isEmpty()) {
-//          secretToken = null;
-//      }
-        String secretToken = "secret_token";
-//      String userId = dpuContext.getPipelineOwner();
-        String userId = "mvi";
-//      String pipelineId = String.valueOf(dpuContext.getPipelineId());
-        String pipelineId = "2";
-        String catalogApiLocation = "http://localhost:81/api/action/internal_api";
-//        String catalogApiLocation = environment.get("catalogApiLocation");
-//        if (catalogApiLocation == null || catalogApiLocation.isEmpty()) {
-//            throw new DPUException("No configuration value for catalogApiLocation");
-//        }
+        Map<String, String> environment = dpuContext.getEnvironment();
+        String secretToken = environment.get(CONFIGURATION_SECRET_TOKEN);
+        if (environment.get(CONFIGURATION_SECRET_TOKEN) == null || environment.get(CONFIGURATION_SECRET_TOKEN).isEmpty()) {
+            secretToken = null;
+        }
+        String userId = dpuContext.getPipelineOwner();
+        String pipelineId = String.valueOf(dpuContext.getPipelineId());
+        String catalogApiLocation = environment.get(CONFIGURATION_CATALOG_API_LOCATION);
+        if (catalogApiLocation == null || catalogApiLocation.isEmpty()) {
+            throw new DPUException("No configuration value for catalogApiLocation");
+        }
 
         if (rdfInput == null) {
             throw new DPUException("No input data unit for me, exiting");

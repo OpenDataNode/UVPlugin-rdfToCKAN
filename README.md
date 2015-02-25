@@ -19,10 +19,8 @@
 
 |Parameter                        |Description                             |                                                        
 |---------------------------------|----------------------------------------|
-|**Destination directory absolute path** |Destination path for file to load.  |
-|**Move files instead of copy (checkbox)** | Additional self-descriptive option for load.|
-|**Replace existing copy (checkbox)** | Additional self-descriptive option for load. |
-|**Skip file on error (checkbox)** | Additional self-descriptive option for load. |
+|**secret_token** |Token used to authenticate to CKAN, has to be set in backend.properties  |
+|**catalogApiLocation** | URL where CKAN api is located, has to be set in backend.properties |
 
 ***
 
@@ -30,7 +28,7 @@
 
 |Name                |Type       |DataUnit                         |Description                        |
 |--------------------|-----------|---------------------------------|-----------------------------------|
-|filesInput |i |FilesDataUnit |File loaded to specified (local host) destiation.  |
+|filesInput |i |FilesDataUnit |File loaded to specified CKAN instance  |
 
 ***
 
@@ -38,7 +36,7 @@
 
 |Version            |Release notes                                   |
 |-------------------|------------------------------------------------|
-|1.3.1              |N/A                                             |                                
+|1.3.0              |N/A                                             |                                
 
 
 ***
