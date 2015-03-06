@@ -42,6 +42,7 @@ import eu.unifiedviews.helpers.dataunit.virtualgraphhelper.VirtualGraphHelpers;
 import eu.unifiedviews.helpers.dpu.config.AbstractConfigDialog;
 import eu.unifiedviews.helpers.dpu.config.ConfigDialogProvider;
 import eu.unifiedviews.helpers.dpu.config.ConfigurableBase;
+import eu.unifiedviews.helpers.dpu.localization.Messages;
 
 @DPU.AsLoader
 public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements ConfigDialogProvider<RdfToCkanConfig_V1> {
@@ -84,7 +85,9 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
 
     @Override
     public void execute(DPUContext dpuContext) throws DPUException, InterruptedException {
-        String shortMessage = this.getClass().getSimpleName() + " starting.";
+        Messages messages = new Messages(dpuContext.getLocale(), getClass().getClassLoader());
+        
+        String shortMessage =  messages.getString("RdfToCkan.execute.start", this.getClass().getSimpleName()); 
         String longMessage = String.valueOf(config);
         dpuContext.sendMessage(DPUContext.MessageType.INFO, shortMessage, longMessage);
         Map<String, String> environment = dpuContext.getEnvironment();
@@ -96,11 +99,11 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
         String pipelineId = String.valueOf(dpuContext.getPipelineId());
         String catalogApiLocation = environment.get(CONFIGURATION_CATALOG_API_LOCATION);
         if (catalogApiLocation == null || catalogApiLocation.isEmpty()) {
-            throw new DPUException("No configuration value for catalogApiLocation");
+            throw new DPUException(messages.getString("RdfToCkan.execute.exception.missingCatalogApiLocation"));
         }
 
         if (rdfInput == null) {
-            throw new DPUException("No input data unit for me, exiting");
+            throw new DPUException(messages.getString("RdfToCkan.execute.exception.missingInput"));
         }
 
         CloseableHttpResponse response = null;
@@ -129,7 +132,7 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
             httpPost.setEntity(entity);
             response = client.execute(httpPost);
             if (response.getStatusLine().getStatusCode() != 200) {
-                throw new DPUException("Could not obtain Dataset entity from CKAN. Response:" + EntityUtils.toString(response.getEntity()));
+                throw new DPUException(messages.getString("RdfToCkan.execute.exception.noDataset"));
             }
 
             JsonReaderFactory readerFactory = Json.createReaderFactory(Collections.<String, Object> emptyMap());
@@ -142,7 +145,7 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
                 }
             }
         } catch (URISyntaxException | IllegalStateException | IOException ex) {
-            throw new DPUException("Cannot obtain dataset from CKAN", ex);
+            throw new DPUException(messages.getString("RdfToCkan.execute.exception.noDataset"), ex);
         } finally {
             if (response != null) {
                 try {
@@ -160,7 +163,7 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
             try {
                 graphs = RDFHelper.getGraphs(rdfInput);
             } catch (DataUnitException ex1) {
-                throw new DPUException("Could not iterate files input", ex1);
+                throw new DPUException(messages.getString("RdfToCkan.execute.exception.dataunit"), ex1);
             }
             for (RDFDataUnit.Entry graph : graphs) {
                 CloseableHttpResponse responseUpdate = null;
@@ -204,12 +207,21 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
 
                     responseUpdate = client.execute(httpPost);
                     if (responseUpdate.getStatusLine().getStatusCode() == 200) {
-                        LOG.info("Response:" + EntityUtils.toString(responseUpdate.getEntity()));
+                        JsonReaderFactory readerFactory = Json.createReaderFactory(Collections.<String, Object> emptyMap());
+                        JsonReader reader = readerFactory.createReader(responseUpdate.getEntity().getContent());
+                        JsonObject resourceResponse = reader.readObject();
+                        if (resourceResponse.getBoolean("success")) {
+                            LOG.info("Response:" + EntityUtils.toString(responseUpdate.getEntity()));
+                        } else {
+                            LOG.warn("Response:" + EntityUtils.toString(responseUpdate.getEntity()));
+                            throw new DPUException(messages.getString("RdfToCkan.execute.exception.fail"));
+                        }
                     } else {
-                        LOG.error("Response:" + EntityUtils.toString(responseUpdate.getEntity()));
+                        LOG.warn("Response:" + EntityUtils.toString(responseUpdate.getEntity()));
+                        throw new DPUException(messages.getString("RdfToCkan.execute.exception.fail"));
                     }
                 } catch (UnsupportedRDFormatException | DataUnitException | IOException | URISyntaxException ex) {
-                    throw new DPUException("Error exporting metadata", ex);
+                    throw new DPUException(messages.getString("RdfToCkan.execute.exception.fail"), ex);
                 } finally {
                     if (responseUpdate != null) {
                         try {
