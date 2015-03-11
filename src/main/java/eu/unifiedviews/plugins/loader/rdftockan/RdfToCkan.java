@@ -70,9 +70,9 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
 
     public static final String CKAN_API_RESOURCE_CREATE = "resource_create";
 
-    public static final String CONFIGURATION_SECRET_TOKEN = "secret_token";
+    public static final String CONFIGURATION_SECRET_TOKEN = "dpu.l-rdfToCkan.secret.token";
 
-    public static final String CONFIGURATION_CATALOG_API_LOCATION = "catalogApiLocation";
+    public static final String CONFIGURATION_CATALOG_API_LOCATION = "dpu.l-rdfToCkan.catalog.api.location";
 
     private static final Logger LOG = LoggerFactory.getLogger(RdfToCkan.class);
 
