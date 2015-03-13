@@ -131,7 +131,17 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
             HttpEntity entity = entityBuilder.build();
             httpPost.setEntity(entity);
             response = client.execute(httpPost);
-            if (response.getStatusLine().getStatusCode() != 200) {
+            if (response.getStatusLine().getStatusCode() == 200) {
+                JsonReaderFactory readerFactory = Json.createReaderFactory(Collections.<String, Object> emptyMap());
+                JsonReader reader = readerFactory.createReader(response.getEntity().getContent());
+                JsonObject resourceResponse = reader.readObject();
+                if (resourceResponse.getBoolean("success")) {
+                    LOG.info("Response:" + EntityUtils.toString(response.getEntity()));
+                } else {
+                    LOG.warn("Response:" + EntityUtils.toString(response.getEntity()));
+                    throw new DPUException(messages.getString("RdfToCkan.execute.exception.noDataset"));
+                }
+            } else {
                 throw new DPUException(messages.getString("RdfToCkan.execute.exception.noDataset"));
             }
 
