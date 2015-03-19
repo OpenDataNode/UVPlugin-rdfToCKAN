@@ -16,11 +16,10 @@
 
 ###Configuration parameters###
 
-
-|Parameter                        |Description                             |                                                        
-|---------------------------------|----------------------------------------|
-|**secret_token** |Token used to authenticate to CKAN, has to be set in backend.properties  |
-|**catalogApiLocation** | URL where CKAN api is located, has to be set in backend.properties |
+|Parameter                             |Description                             |                                                        
+|--------------------------------------|----------------------------------------|
+|**dpu.l-filesToCkan.secret.token**    |Token used to authenticate to CKAN, has to be set in backend.properties  |
+|**dpu.l-filesToCkan.catalog.api.url** | URL where CKAN api is located, has to be set in backend.properties |
 
 ***
 

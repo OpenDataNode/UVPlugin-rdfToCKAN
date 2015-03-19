@@ -87,16 +87,16 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
     @Override
     protected void innerExecute() throws DPUException {
         this.dpuContext = this.ctx.getExecMasterContext().getDpuContext();
-        String shortMessage = this.ctx.tr("RdfToCkan.execute.start", this.getClass().getSimpleName());
-        String longMessage = String.valueOf(config);
-        dpuContext.sendMessage(DPUContext.MessageType.INFO, shortMessage, longMessage);
+        ContextUtils.sendShortInfo(this.ctx, "RdfToCkan.execute.start", this.getClass().getSimpleName());
         Map<String, String> environment = dpuContext.getEnvironment();
+
         String secretToken = environment.get(CONFIGURATION_SECRET_TOKEN);
         if (environment.get(CONFIGURATION_SECRET_TOKEN) == null || environment.get(CONFIGURATION_SECRET_TOKEN).isEmpty()) {
-            secretToken = null;
+            throw ContextUtils.dpuException(this.ctx, "RdfToCkan.execute.exception.missingSecretToken");
         }
         String userId = dpuContext.getPipelineOwner();
         String pipelineId = String.valueOf(dpuContext.getPipelineId());
+
         String catalogApiLocation = environment.get(CONFIGURATION_CATALOG_API_LOCATION);
         if (catalogApiLocation == null || catalogApiLocation.isEmpty()) {
             throw ContextUtils.dpuException(this.ctx, "RdfToCkan.execute.exception.missingCatalogApiLocation");
@@ -117,17 +117,11 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
             HttpPost httpPost = new HttpPost(uriBuilder.build().normalize());
             MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create()
                     .addTextBody(PROXY_API_DATA, "{}", ContentType.APPLICATION_JSON.withCharset("UTF-8"))
+                    .addTextBody(PROXY_API_PIPELINE_ID, pipelineId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
+                    .addTextBody(PROXY_API_USER_ID, userId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
+                    .addTextBody(PROXY_API_TOKEN, secretToken, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                     .addTextBody(PROXY_API_ACTION, CKAN_API_PACKAGE_SHOW, ContentType.TEXT_PLAIN.withCharset("UTF-8"));
 
-            if (pipelineId != null) {
-                entityBuilder.addTextBody(PROXY_API_PIPELINE_ID, pipelineId, ContentType.TEXT_PLAIN.withCharset("UTF-8"));
-            }
-            if (userId != null) {
-                entityBuilder.addTextBody(PROXY_API_USER_ID, userId, ContentType.TEXT_PLAIN.withCharset("UTF-8"));
-            }
-            if (secretToken != null) {
-                entityBuilder.addTextBody(PROXY_API_TOKEN, secretToken, ContentType.TEXT_PLAIN.withCharset("UTF-8"));
-            }
             HttpEntity entity = entityBuilder.build();
             httpPost.setEntity(entity);
             response = client.execute(httpPost);
@@ -195,17 +189,10 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
                     MultipartEntityBuilder builder = MultipartEntityBuilder.create()
                             .addTextBody(PROXY_API_TYPE, PROXY_API_TYPE_RDF, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_STORAGE_ID, storageId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
+                            .addTextBody(PROXY_API_PIPELINE_ID, pipelineId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
+                            .addTextBody(PROXY_API_USER_ID, userId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
+                            .addTextBody(PROXY_API_TOKEN, secretToken, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_DATA, resourceBuilder.build().toString(), ContentType.APPLICATION_JSON.withCharset("UTF-8"));
-
-                    if (pipelineId != null) {
-                        builder.addTextBody(PROXY_API_PIPELINE_ID, pipelineId, ContentType.TEXT_PLAIN.withCharset("UTF-8"));
-                    }
-                    if (userId != null) {
-                        builder.addTextBody(PROXY_API_USER_ID, userId, ContentType.TEXT_PLAIN.withCharset("UTF-8"));
-                    }
-                    if (secretToken != null) {
-                        builder.addTextBody(PROXY_API_TOKEN, secretToken, ContentType.TEXT_PLAIN.withCharset("UTF-8"));
-                    }
 
                     if (existingResources.containsKey(storageId)) {
                         builder.addTextBody(PROXY_API_ACTION, CKAN_API_RESOURCE_UPDATE, ContentType.TEXT_PLAIN.withCharset("UTF-8"));
