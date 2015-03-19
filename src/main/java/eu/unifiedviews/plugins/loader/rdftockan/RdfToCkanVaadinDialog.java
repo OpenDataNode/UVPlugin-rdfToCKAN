@@ -5,36 +5,20 @@ import com.vaadin.ui.FormLayout;
 import com.vaadin.ui.TextField;
 
 import eu.unifiedviews.dpu.config.DPUConfigException;
-import eu.unifiedviews.helpers.dpu.config.BaseConfigDialog;
-import eu.unifiedviews.helpers.dpu.localization.Messages;
+import eu.unifiedviews.helpers.dpu.vaadin.dialog.AbstractDialog;
 
 /**
  * DPU's configuration dialog. User can use this dialog to configure DPU
  * configuration.
  */
-public class RdfToCkanVaadinDialog extends BaseConfigDialog<RdfToCkanConfig_V1> {
+public class RdfToCkanVaadinDialog extends AbstractDialog<RdfToCkanConfig_V1> {
 
-    private static final long serialVersionUID = -5668436075836909428L;
+    private static final long serialVersionUID = -4773062982259181847L;
 
     private ObjectProperty<String> catalogApiLocation = new ObjectProperty<String>("");
 
-    private Messages messages;
-
     public RdfToCkanVaadinDialog() {
-        super(RdfToCkanConfig_V1.class);
-        initialize();
-    }
-
-    private void initialize() {
-        messages = new Messages(getContext().getLocale(), this.getClass().getClassLoader());
-        FormLayout mainLayout = new FormLayout();
-
-        // top-level component properties
-        setWidth("100%");
-        setHeight("100%");
-        TextField txtCatalogApiLocation = new TextField(messages.getString("RdfToCkanVaadinDialog.catalogApiLocation"), catalogApiLocation);
-        txtCatalogApiLocation.setWidth("100%");
-        setCompositionRoot(mainLayout);
+        super(RdfToCkan.class);
     }
 
     @Override
@@ -54,5 +38,17 @@ public class RdfToCkanVaadinDialog extends BaseConfigDialog<RdfToCkanConfig_V1> 
     @Override
     public String getDescription() {
         return "";
+    }
+
+    @Override
+    protected void buildDialogLayout() {
+        FormLayout mainLayout = new FormLayout();
+
+        // top-level component properties
+        setWidth("100%");
+        setHeight("100%");
+        TextField txtCatalogApiLocation = new TextField(this.ctx.tr("RdfToCkanVaadinDialog.catalogApiLocation"), catalogApiLocation);
+        txtCatalogApiLocation.setWidth("100%");
+        setCompositionRoot(mainLayout);
     }
 }

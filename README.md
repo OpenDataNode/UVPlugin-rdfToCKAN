@@ -36,7 +36,8 @@
 
 |Version            |Release notes                                   |
 |-------------------|------------------------------------------------|
-|1.3.0              |N/A                                             |                                
+|1.0.0-SNAPSHOT     |N/A                                             |
+|1.0.1-SNAPSHOT     |Migration to DPU 2.0 helpers                    |                                
 
 
 ***

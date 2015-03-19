@@ -34,18 +34,17 @@ import eu.unifiedviews.dataunit.rdf.RDFDataUnit;
 import eu.unifiedviews.dpu.DPU;
 import eu.unifiedviews.dpu.DPUContext;
 import eu.unifiedviews.dpu.DPUException;
-import eu.unifiedviews.helpers.dataunit.rdfhelper.RDFHelper;
-import eu.unifiedviews.helpers.dataunit.resourcehelper.Resource;
-import eu.unifiedviews.helpers.dataunit.resourcehelper.ResourceConverter;
-import eu.unifiedviews.helpers.dataunit.resourcehelper.ResourceHelpers;
-import eu.unifiedviews.helpers.dataunit.virtualgraphhelper.VirtualGraphHelpers;
-import eu.unifiedviews.helpers.dpu.config.AbstractConfigDialog;
-import eu.unifiedviews.helpers.dpu.config.ConfigDialogProvider;
-import eu.unifiedviews.helpers.dpu.config.ConfigurableBase;
-import eu.unifiedviews.helpers.dpu.localization.Messages;
+import eu.unifiedviews.helpers.dataunit.rdf.RDFHelper;
+import eu.unifiedviews.helpers.dataunit.resource.Resource;
+import eu.unifiedviews.helpers.dataunit.resource.ResourceConverter;
+import eu.unifiedviews.helpers.dataunit.resource.ResourceHelpers;
+import eu.unifiedviews.helpers.dataunit.virtualgraph.VirtualGraphHelpers;
+import eu.unifiedviews.helpers.dpu.config.ConfigHistory;
+import eu.unifiedviews.helpers.dpu.context.ContextUtils;
+import eu.unifiedviews.helpers.dpu.exec.AbstractDpu;
 
 @DPU.AsLoader
-public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements ConfigDialogProvider<RdfToCkanConfig_V1> {
+public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
     public static final String PROXY_API_ACTION = "action";
 
     public static final String PROXY_API_PIPELINE_ID = "pipeline_id";
@@ -76,18 +75,19 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
 
     private static final Logger LOG = LoggerFactory.getLogger(RdfToCkan.class);
 
+    private DPUContext dpuContext;
+
     @DataUnit.AsInput(name = "rdfInput")
     public RDFDataUnit rdfInput;
 
     public RdfToCkan() {
-        super(RdfToCkanConfig_V1.class);
+        super(RdfToCkanVaadinDialog.class, ConfigHistory.noHistory(RdfToCkanConfig_V1.class));
     }
 
     @Override
-    public void execute(DPUContext dpuContext) throws DPUException, InterruptedException {
-        Messages messages = new Messages(dpuContext.getLocale(), getClass().getClassLoader());
-        
-        String shortMessage =  messages.getString("RdfToCkan.execute.start", this.getClass().getSimpleName()); 
+    protected void innerExecute() throws DPUException {
+        this.dpuContext = this.ctx.getExecMasterContext().getDpuContext();
+        String shortMessage = this.ctx.tr("RdfToCkan.execute.start", this.getClass().getSimpleName());
         String longMessage = String.valueOf(config);
         dpuContext.sendMessage(DPUContext.MessageType.INFO, shortMessage, longMessage);
         Map<String, String> environment = dpuContext.getEnvironment();
@@ -99,11 +99,11 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
         String pipelineId = String.valueOf(dpuContext.getPipelineId());
         String catalogApiLocation = environment.get(CONFIGURATION_CATALOG_API_LOCATION);
         if (catalogApiLocation == null || catalogApiLocation.isEmpty()) {
-            throw new DPUException(messages.getString("RdfToCkan.execute.exception.missingCatalogApiLocation"));
+            throw ContextUtils.dpuException(this.ctx, "RdfToCkan.execute.exception.missingCatalogApiLocation");
         }
 
         if (rdfInput == null) {
-            throw new DPUException(messages.getString("RdfToCkan.execute.exception.missingInput"));
+            throw ContextUtils.dpuException(this.ctx, "RdfToCkan.execute.exception.missingInput");
         }
 
         CloseableHttpResponse response = null;
@@ -139,10 +139,10 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
                     LOG.info("Response:" + EntityUtils.toString(response.getEntity()));
                 } else {
                     LOG.warn("Response:" + EntityUtils.toString(response.getEntity()));
-                    throw new DPUException(messages.getString("RdfToCkan.execute.exception.noDataset"));
+                    throw ContextUtils.dpuException(this.ctx, "RdfToCkan.execute.exception.noDataset");
                 }
             } else {
-                throw new DPUException(messages.getString("RdfToCkan.execute.exception.noDataset"));
+                throw ContextUtils.dpuException(this.ctx, "RdfToCkan.execute.exception.noDataset");
             }
 
             JsonReaderFactory readerFactory = Json.createReaderFactory(Collections.<String, Object> emptyMap());
@@ -155,7 +155,7 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
                 }
             }
         } catch (URISyntaxException | IllegalStateException | IOException ex) {
-            throw new DPUException(messages.getString("RdfToCkan.execute.exception.noDataset"), ex);
+            throw ContextUtils.dpuException(this.ctx, ex, "RdfToCkan.execute.exception.noDataset");
         } finally {
             if (response != null) {
                 try {
@@ -173,7 +173,7 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
             try {
                 graphs = RDFHelper.getGraphs(rdfInput);
             } catch (DataUnitException ex1) {
-                throw new DPUException(messages.getString("RdfToCkan.execute.exception.dataunit"), ex1);
+                throw ContextUtils.dpuException(this.ctx, ex1, "RdfToCkan.execute.exception.dataunit");
             }
             for (RDFDataUnit.Entry graph : graphs) {
                 CloseableHttpResponse responseUpdate = null;
@@ -224,14 +224,14 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
                             LOG.info("Response:" + EntityUtils.toString(responseUpdate.getEntity()));
                         } else {
                             LOG.warn("Response:" + EntityUtils.toString(responseUpdate.getEntity()));
-                            throw new DPUException(messages.getString("RdfToCkan.execute.exception.fail"));
+                            throw ContextUtils.dpuException(this.ctx, "RdfToCkan.execute.exception.fail");
                         }
                     } else {
                         LOG.warn("Response:" + EntityUtils.toString(responseUpdate.getEntity()));
-                        throw new DPUException(messages.getString("RdfToCkan.execute.exception.fail"));
+                        throw ContextUtils.dpuException(this.ctx, "RdfToCkan.execute.exception.fail");
                     }
                 } catch (UnsupportedRDFormatException | DataUnitException | IOException | URISyntaxException ex) {
-                    throw new DPUException(messages.getString("RdfToCkan.execute.exception.fail"), ex);
+                    throw ContextUtils.dpuException(this.ctx, ex, "RdfToCkan.execute.exception.fail");
                 } finally {
                     if (responseUpdate != null) {
                         try {
@@ -249,11 +249,6 @@ public class RdfToCkan extends ConfigurableBase<RdfToCkanConfig_V1> implements C
                 LOG.warn("Error in close", ex);
             }
         }
-    }
-
-    @Override
-    public AbstractConfigDialog<RdfToCkanConfig_V1> getConfigurationDialog() {
-        return new RdfToCkanVaadinDialog();
     }
 
     private JsonObjectBuilder buildResource(JsonBuilderFactory factory, Resource resource) {
