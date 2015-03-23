@@ -125,10 +125,10 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
             HttpEntity entity = entityBuilder.build();
             httpPost.setEntity(entity);
             response = client.execute(httpPost);
+            JsonReaderFactory readerFactory = Json.createReaderFactory(Collections.<String, Object> emptyMap());
+            JsonReader reader = readerFactory.createReader(response.getEntity().getContent());
+            JsonObject resourceResponse = reader.readObject();
             if (response.getStatusLine().getStatusCode() == 200) {
-                JsonReaderFactory readerFactory = Json.createReaderFactory(Collections.<String, Object> emptyMap());
-                JsonReader reader = readerFactory.createReader(response.getEntity().getContent());
-                JsonObject resourceResponse = reader.readObject();
                 if (resourceResponse.getBoolean("success")) {
                     LOG.info("Response:" + EntityUtils.toString(response.getEntity()));
                 } else {
@@ -139,10 +139,7 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
                 throw ContextUtils.dpuException(this.ctx, "RdfToCkan.execute.exception.noDataset");
             }
 
-            JsonReaderFactory readerFactory = Json.createReaderFactory(Collections.<String, Object> emptyMap());
-            JsonReader reader = readerFactory.createReader(response.getEntity().getContent());
-            JsonObject dataset = reader.readObject();
-            JsonArray resources = dataset.getJsonArray("resources");
+            JsonArray resources = resourceResponse.getJsonArray("resources");
             if (resources != null) {
                 for (JsonObject resource : resources.getValuesAs(JsonObject.class)) {
                     existingResources.put(resource.getString("name"), resource.getString("id"));
