@@ -1,0 +1,9 @@
+<b>L-RdfToCkan loader</b> can be used to load graphs metadata to the specified CKAN instance. 
+<p/>
+In order to work properly, these two parameters must be set in backend config.properties:
+<ul>
+	<li><b>dpu.l-rdfToCkan.catalog.api.url</b> - URL of CKAN API</li>
+	<li><b>dpu.l-rdfToCkan.secret.token</b> - authentication token for target CKAN</li>
+</ul>
+<br/>
+Also, prior to running this DPU, an association between pipeline and CKAN dataset must exist, otherwise DPU fails 
