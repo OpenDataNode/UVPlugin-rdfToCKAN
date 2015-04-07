@@ -10,7 +10,7 @@
 		<relativePath />
 	</parent>
 
-	<groupId>eu.unifiedviews.plugins</groupId>
+	<groupId>eu.opendatanode.plugins</groupId>
 	<artifactId>uv-l-rdfToCkan</artifactId>
 	<name>L-RdfToCkan</name>
 	<description>Loads graphs as resources to CKAN catalog</description>
@@ -28,8 +28,6 @@
 	<properties>
 		<dpu.package>eu.unifiedviews.plugins.loader.rdftockan</dpu.package>
 		<dpu.mainClass>RdfToCkan</dpu.mainClass>
-		<uv.helpers.version>[2.0.0,3.0.0)</uv.helpers.version>
-		<module-test.version>2.0.0</module-test.version>
 	</properties>
 
 	<dependencies>
@@ -37,13 +35,11 @@
 		<dependency>
 			<groupId>eu.unifiedviews</groupId>
 			<artifactId>uv-dataunit-helpers</artifactId>
-			<version>${uv.helpers.version}</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>eu.unifiedviews</groupId>
 			<artifactId>uv-dpu-helpers</artifactId>
-			<version>${uv.helpers.version}</version>
 			<scope>compile</scope>
 		</dependency>
 	<!-- DPU dependencies -->
