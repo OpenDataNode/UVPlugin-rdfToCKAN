@@ -69,9 +69,9 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
 
     public static final String CKAN_API_RESOURCE_CREATE = "resource_create";
 
-    public static final String CONFIGURATION_SECRET_TOKEN = "dpu.l-rdfToCkan.secret.token";
+    public static final String CONFIGURATION_SECRET_TOKEN = "dpu.uv-l-rdfToCkan.secret.token";
 
-    public static final String CONFIGURATION_CATALOG_API_LOCATION = "dpu.l-rdfToCkan.catalog.api.url";
+    public static final String CONFIGURATION_CATALOG_API_LOCATION = "dpu.uv-l-rdfToCkan.catalog.api.url";
 
     private static final Logger LOG = LoggerFactory.getLogger(RdfToCkan.class);
 
