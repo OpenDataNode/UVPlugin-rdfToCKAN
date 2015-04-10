@@ -168,15 +168,21 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
             }
             for (RDFDataUnit.Entry graph : graphs) {
                 CloseableHttpResponse responseUpdate = null;
+                boolean bResourceExists = false;
                 try {
                     String storageId = VirtualGraphHelpers.getVirtualGraph(rdfInput, graph.getSymbolicName());
                     if (storageId == null || storageId.isEmpty()) {
                         storageId = graph.getSymbolicName();
                     }
                     Resource resource = ResourceHelpers.getResource(rdfInput, graph.getSymbolicName());
+                    if (existingResources.containsKey(storageId)) {
+                        bResourceExists = true;
+                        // If resource already exists, created time should not be sent so original created time is preserved
+                        resource.setCreated(null);
+                    }
                     resource.setName(storageId);
                     JsonObjectBuilder resourceBuilder = buildResource(factory, resource);
-                    if (existingResources.containsKey(storageId)) {
+                    if (bResourceExists) {
                         resourceBuilder.add("id", existingResources.get(storageId));
                     }
 
@@ -191,7 +197,7 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
                             .addTextBody(PROXY_API_TOKEN, secretToken, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_DATA, resourceBuilder.build().toString(), ContentType.APPLICATION_JSON.withCharset("UTF-8"));
 
-                    if (existingResources.containsKey(storageId)) {
+                    if (bResourceExists) {
                         builder.addTextBody(PROXY_API_ACTION, CKAN_API_RESOURCE_UPDATE, ContentType.TEXT_PLAIN.withCharset("UTF-8"));
                     } else {
                         builder.addTextBody(PROXY_API_ACTION, CKAN_API_RESOURCE_CREATE, ContentType.TEXT_PLAIN.withCharset("UTF-8"));
