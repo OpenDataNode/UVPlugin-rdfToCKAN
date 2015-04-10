@@ -236,16 +236,13 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
     }
 
     private JsonObjectBuilder buildResource(JsonBuilderFactory factory, Resource resource) {
-        JsonObjectBuilder resourceExtrasBuilder = factory.createObjectBuilder();
-        for (Map.Entry<String, String> mapEntry : ResourceConverter.extrasToMap(resource.getExtras()).entrySet()) {
-            resourceExtrasBuilder.add(mapEntry.getKey(), mapEntry.getValue());
-        }
-
         JsonObjectBuilder resourceBuilder = factory.createObjectBuilder();
         for (Map.Entry<String, String> mapEntry : ResourceConverter.resourceToMap(resource).entrySet()) {
             resourceBuilder.add(mapEntry.getKey(), mapEntry.getValue());
         }
-        resourceBuilder.add("extras", resourceExtrasBuilder);
+        for (Map.Entry<String, String> mapEntry : ResourceConverter.extrasToMap(resource.getExtras()).entrySet()) {
+            resourceBuilder.add(mapEntry.getKey(), mapEntry.getValue());
+        }
 
         return resourceBuilder;
     }
