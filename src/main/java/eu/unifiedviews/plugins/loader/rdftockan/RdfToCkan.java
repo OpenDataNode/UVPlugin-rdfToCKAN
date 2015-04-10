@@ -139,7 +139,7 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
                 throw ContextUtils.dpuException(this.ctx, "RdfToCkan.execute.exception.noDataset");
             }
 
-            JsonArray resources = resourceResponse.getJsonArray("resources");
+            JsonArray resources = resourceResponse.getJsonObject("result").getJsonArray("resources");
             if (resources != null) {
                 for (JsonObject resource : resources.getValuesAs(JsonObject.class)) {
                     existingResources.put(resource.getString("name"), resource.getString("id"));
