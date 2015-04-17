@@ -14,7 +14,7 @@
 	<artifactId>uv-l-rdfToCkan</artifactId>
 	<name>L-RdfToCkan</name>
 	<description>Loads graphs as resources to CKAN catalog</description>
-	<version>1.0.1-SNAPSHOT</version>
+	<version>1.0.2-SNAPSHOT</version>
 	<packaging>bundle</packaging>
 
 	<properties>
