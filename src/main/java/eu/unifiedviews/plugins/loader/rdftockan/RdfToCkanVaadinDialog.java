@@ -2,6 +2,7 @@ package eu.unifiedviews.plugins.loader.rdftockan;
 
 import eu.unifiedviews.dpu.config.DPUConfigException;
 import eu.unifiedviews.helpers.dpu.vaadin.dialog.AbstractDialog;
+import eu.unifiedviews.helpers.dpu.vaadin.dialog.UserDialogContext;
 
 /**
  * DPU's configuration dialog. User can use this dialog to configure DPU
@@ -15,6 +16,11 @@ public class RdfToCkanVaadinDialog extends AbstractDialog<RdfToCkanConfig_V1> {
         super(RdfToCkan.class);
     }
 
+    public void outerBuildDialogLayout(UserDialogContext ctx) {
+        this.ctx = ctx;
+        buildDialogLayout();
+    }
+    
     @Override
     protected void buildDialogLayout() {
         // No dialog for this DPU
