@@ -85,29 +85,8 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         super(RdfToCkanVaadinDialog.class, ConfigHistory.noHistory(RdfToCkanConfig_V1.class));
     }
 
-    public void outerExecute(UserExecContext ctx, RdfToCkanConfig_V1 config) throws DPUException {
-        this.dpuContext = ctx.getExecMasterContext().getDpuContext();
-        ContextUtils.sendShortInfo(ctx, "RdfToCkan.execute.start", this.getClass().getSimpleName());
-        Map<String, String> environment = dpuContext.getEnvironment();
-
-        String secretToken = environment.get(CONFIGURATION_SECRET_TOKEN);
-        if (environment.get(CONFIGURATION_SECRET_TOKEN) == null || environment.get(CONFIGURATION_SECRET_TOKEN).isEmpty()) {
-            throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingSecretToken");
-        }
-        String userId = dpuContext.getPipelineOwner();
-        String pipelineId = String.valueOf(dpuContext.getPipelineId());
-
-        String catalogApiLocation = environment.get(CONFIGURATION_CATALOG_API_LOCATION);
-        if (catalogApiLocation == null || catalogApiLocation.isEmpty()) {
-            throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingCatalogApiLocation");
-        }
-
-        if (rdfInput == null) {
-            throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingInput");
-        }
-
+    public JsonObject packageShow(String catalogApiLocation, String pipelineId,String userId,String secretToken) throws DPUException {
         CloseableHttpResponse response = null;
-        Map<String, String> existingResources = new HashMap<>();
         try {
             CloseableHttpClient client = HttpClients.createDefault();
             URIBuilder uriBuilder;
@@ -138,13 +117,7 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
             } else {
                 throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.noDataset");
             }
-
-            JsonArray resources = resourceResponse.getJsonObject("result").getJsonArray("resources");
-            if (resources != null) {
-                for (JsonObject resource : resources.getValuesAs(JsonObject.class)) {
-                    existingResources.put(resource.getString("name"), resource.getString("id"));
-                }
-            }
+            return resourceResponse;
         } catch (URISyntaxException | IllegalStateException | IOException ex) {
             throw ContextUtils.dpuException(ctx, ex, "RdfToCkan.execute.exception.noDataset");
         } finally {
@@ -154,6 +127,37 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
                 } catch (IOException ex) {
                     LOG.warn("Error in close", ex);
                 }
+            }
+        }
+    }
+
+    public void outerExecute(UserExecContext ctx, RdfToCkanConfig_V1 config) throws DPUException {
+        this.dpuContext = ctx.getExecMasterContext().getDpuContext();
+        ContextUtils.sendShortInfo(ctx, "RdfToCkan.execute.start", this.getClass().getSimpleName());
+        Map<String, String> environment = dpuContext.getEnvironment();
+
+        String secretToken = environment.get(CONFIGURATION_SECRET_TOKEN);
+        if (environment.get(CONFIGURATION_SECRET_TOKEN) == null || environment.get(CONFIGURATION_SECRET_TOKEN).isEmpty()) {
+            throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingSecretToken");
+        }
+        String userId = dpuContext.getPipelineOwner();
+        String   pipelineId = String.valueOf(dpuContext.getPipelineId());
+
+        String  catalogApiLocation = environment.get(CONFIGURATION_CATALOG_API_LOCATION);
+        if (catalogApiLocation == null || catalogApiLocation.isEmpty()) {
+            throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingCatalogApiLocation");
+        }
+
+        if (rdfInput == null) {
+            throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingInput");
+        }
+
+        Map<String, String> existingResources = new HashMap<>();
+        JsonObject resourceResponsePackageShow = this.packageShow(catalogApiLocation, pipelineId, userId, secretToken);
+        JsonArray resources = resourceResponsePackageShow.getJsonObject("result").getJsonArray("resources");
+        if (resources != null) {
+            for (JsonObject resource : resources.getValuesAs(JsonObject.class)) {
+                existingResources.put(resource.getString("name"), resource.getString("id"));
             }
         }
 
