@@ -76,6 +76,8 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
 
     private static final Logger LOG = LoggerFactory.getLogger(RdfToCkan.class);
 
+    private static final String CKAN_API_ACTOR_ID = "actor_id";
+
     private DPUContext dpuContext;
 
     @DataUnit.AsInput(name = "rdfInput")
@@ -85,7 +87,7 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         super(RdfToCkanVaadinDialog.class, ConfigHistory.noHistory(RdfToCkanConfig_V1.class));
     }
 
-    public JsonObject packageShow(String catalogApiLocation, String pipelineId,String userId,String secretToken) throws DPUException {
+    public JsonObject packageShow(String catalogApiLocation, String pipelineId, String userId, String secretToken) throws DPUException {
         CloseableHttpResponse response = null;
         try {
             CloseableHttpClient client = HttpClients.createDefault();
@@ -140,10 +142,11 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         if (environment.get(CONFIGURATION_SECRET_TOKEN) == null || environment.get(CONFIGURATION_SECRET_TOKEN).isEmpty()) {
             throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingSecretToken");
         }
-        String userId = dpuContext.getPipelineOwner();
-        String   pipelineId = String.valueOf(dpuContext.getPipelineId());
+        String userId = (this.dpuContext.getPipelineExecutionOwnerExternalId() != null) ? this.dpuContext.getPipelineExecutionOwnerExternalId()
+                : this.dpuContext.getPipelineExecutionOwner();
+        String pipelineId = String.valueOf(dpuContext.getPipelineId());
 
-        String  catalogApiLocation = environment.get(CONFIGURATION_CATALOG_API_LOCATION);
+        String catalogApiLocation = environment.get(CONFIGURATION_CATALOG_API_LOCATION);
         if (catalogApiLocation == null || catalogApiLocation.isEmpty()) {
             throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingCatalogApiLocation");
         }
@@ -257,6 +260,9 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         }
         for (Map.Entry<String, String> mapEntry : ResourceConverter.extrasToMap(resource.getExtras()).entrySet()) {
             resourceBuilder.add(mapEntry.getKey(), mapEntry.getValue());
+        }
+        if (this.dpuContext.getPipelineExecutionActorExternalId() != null) {
+            resourceBuilder.add(CKAN_API_ACTOR_ID, this.dpuContext.getPipelineExecutionActorExternalId());
         }
 
         return resourceBuilder;
