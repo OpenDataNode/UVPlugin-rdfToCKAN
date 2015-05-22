@@ -82,9 +82,17 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
     @Deprecated
     public static final String CONFIGURATION_DPU_CATALOG_API_LOCATION = "dpu.uv-l-rdfToCkan.catalog.api.url";
 
+    /**
+     * @deprecated Global configuration should be used {@link CONFIGURATION_HTTP_HEADER}
+     */
+    @Deprecated
+    public static final String CONFIGURATION_DPU_HTTP_HEADER = "dpu.uv-l-rdfToCkan.http.header.";
+
     public static final String CONFIGURATION_SECRET_TOKEN = "org.opendatanode.CKAN.secret.token";
 
     public static final String CONFIGURATION_CATALOG_API_LOCATION = "org.opendatanode.CKAN.api.url";
+
+    public static final String CONFIGURATION_HTTP_HEADER = "org.opendatanode.CKAN.http.header.";
 
     private static final Logger LOG = LoggerFactory.getLogger(RdfToCkan.class);
 
@@ -120,6 +128,25 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
             }
         }
 
+        Map<String, String> additionalHttpHeaders = new HashMap<>();
+        for (Map.Entry<String, String> configEntry : environment.entrySet()) {
+            if (configEntry.getKey().startsWith(CONFIGURATION_HTTP_HEADER)) {
+                String headerName = configEntry.getKey().replace(CONFIGURATION_HTTP_HEADER, "");
+                String headerValue = configEntry.getValue();
+                additionalHttpHeaders.put(headerName, headerValue);
+            }
+        }
+        if (additionalHttpHeaders.isEmpty()) {
+            LOG.debug("Missing global configuration for additional HTTP headers, trying to use DPU specific configuration");
+            for (Map.Entry<String, String> configEntry : environment.entrySet()) {
+                if (configEntry.getKey().startsWith(CONFIGURATION_DPU_HTTP_HEADER)) {
+                    String headerName = configEntry.getKey().replace(CONFIGURATION_DPU_HTTP_HEADER, "");
+                    String headerValue = configEntry.getValue();
+                    additionalHttpHeaders.put(headerName, headerValue);
+                }
+            }
+        }
+
         if (rdfInput == null) {
             throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingInput");
         }
@@ -133,6 +160,10 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
 
             uriBuilder.setPath(uriBuilder.getPath());
             HttpPost httpPost = new HttpPost(uriBuilder.build().normalize());
+            for (Map.Entry<String, String> additionalHeader : additionalHttpHeaders.entrySet()) {
+                httpPost.addHeader(additionalHeader.getKey(), additionalHeader.getValue());
+            }
+
             MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create()
                     .addTextBody(PROXY_API_DATA, "{}", ContentType.APPLICATION_JSON.withCharset("UTF-8"))
                     .addTextBody(PROXY_API_PIPELINE_ID, pipelineId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
@@ -207,6 +238,10 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
                     URIBuilder uriBuilder = new URIBuilder(catalogApiLocation);
                     uriBuilder.setPath(uriBuilder.getPath());
                     HttpPost httpPost = new HttpPost(uriBuilder.build().normalize());
+                    for (Map.Entry<String, String> additionalHeader : additionalHttpHeaders.entrySet()) {
+                        httpPost.addHeader(additionalHeader.getKey(), additionalHeader.getValue());
+                    }
+
                     MultipartEntityBuilder builder = MultipartEntityBuilder.create()
                             .addTextBody(PROXY_API_TYPE, PROXY_API_TYPE_RDF, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_STORAGE_ID, storageId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
