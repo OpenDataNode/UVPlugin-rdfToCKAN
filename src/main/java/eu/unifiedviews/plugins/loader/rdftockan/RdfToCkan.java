@@ -70,9 +70,21 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
 
     public static final String CKAN_API_RESOURCE_CREATE = "resource_create";
 
-    public static final String CONFIGURATION_SECRET_TOKEN = "dpu.uv-l-rdfToCkan.secret.token";
+    /**
+     * @deprecated Global configuration should be used {@link CONFIGURATION_SECRET_TOKEN}
+     */
+    @Deprecated
+    public static final String CONFIGURATION_DPU_SECRET_TOKEN = "dpu.uv-l-rdfToCkan.secret.token";
 
-    public static final String CONFIGURATION_CATALOG_API_LOCATION = "dpu.uv-l-rdfToCkan.catalog.api.url";
+    /**
+     * @deprecated Global configuration should be used {@link CONFIGURATION_CATALOG_API_LOCATION}
+     */
+    @Deprecated
+    public static final String CONFIGURATION_DPU_CATALOG_API_LOCATION = "dpu.uv-l-rdfToCkan.catalog.api.url";
+
+    public static final String CONFIGURATION_SECRET_TOKEN = "org.opendatanode.CKAN.secret.token";
+
+    public static final String CONFIGURATION_CATALOG_API_LOCATION = "org.opendatanode.CKAN.api.url";
 
     private static final Logger LOG = LoggerFactory.getLogger(RdfToCkan.class);
 
@@ -91,15 +103,21 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         Map<String, String> environment = dpuContext.getEnvironment();
 
         String secretToken = environment.get(CONFIGURATION_SECRET_TOKEN);
-        if (environment.get(CONFIGURATION_SECRET_TOKEN) == null || environment.get(CONFIGURATION_SECRET_TOKEN).isEmpty()) {
-            throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingSecretToken");
+        if (isEmpty(secretToken)) {
+            secretToken = environment.get(CONFIGURATION_DPU_SECRET_TOKEN);
+            if (isEmpty(secretToken)) {
+                throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingSecretToken");
+            }
         }
         String userId = dpuContext.getPipelineOwner();
         String pipelineId = String.valueOf(dpuContext.getPipelineId());
 
         String catalogApiLocation = environment.get(CONFIGURATION_CATALOG_API_LOCATION);
-        if (catalogApiLocation == null || catalogApiLocation.isEmpty()) {
-            throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingCatalogApiLocation");
+        if (isEmpty(catalogApiLocation)) {
+            catalogApiLocation = environment.get(CONFIGURATION_DPU_CATALOG_API_LOCATION);
+            if (isEmpty(catalogApiLocation)) {
+                throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingCatalogApiLocation");
+            }
         }
 
         if (rdfInput == null) {
@@ -239,6 +257,13 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
                 LOG.warn("Error in close", ex);
             }
         }
+    }
+
+    private static boolean isEmpty(String value) {
+        if (value == null || value.isEmpty()) {
+            return true;
+        }
+        return false;
     }
 
     @Override
