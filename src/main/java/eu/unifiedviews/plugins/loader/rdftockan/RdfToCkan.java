@@ -70,9 +70,23 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
 
     public static final String CKAN_API_RESOURCE_CREATE = "resource_create";
 
-    public static final String CONFIGURATION_SECRET_TOKEN = "dpu.uv-l-rdfToCkan.secret.token";
+    /**
+     * @deprecated Global configuration should be used {@link CONFIGURATION_SECRET_TOKEN}
+     */
+    @Deprecated
+    public static final String CONFIGURATION_DPU_SECRET_TOKEN = "dpu.uv-l-rdfToCkan.secret.token";
 
-    public static final String CONFIGURATION_CATALOG_API_LOCATION = "dpu.uv-l-rdfToCkan.catalog.api.url";
+    /**
+     * @deprecated Global configuration should be used {@link CONFIGURATION_CATALOG_API_LOCATION}
+     */
+    @Deprecated
+    public static final String CONFIGURATION_DPU_CATALOG_API_LOCATION = "dpu.uv-l-rdfToCkan.catalog.api.url";
+
+    public static final String CONFIGURATION_SECRET_TOKEN = "org.opendatanode.CKAN.secret.token";
+
+    public static final String CONFIGURATION_CATALOG_API_LOCATION = "org.opendatanode.CKAN.api.url";
+
+    public static final String CONFIGURATION_HTTP_HEADER = "org.opendatanode.CKAN.http.header.";
 
     private static final Logger LOG = LoggerFactory.getLogger(RdfToCkan.class);
 
@@ -91,15 +105,30 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         Map<String, String> environment = dpuContext.getEnvironment();
 
         String secretToken = environment.get(CONFIGURATION_SECRET_TOKEN);
-        if (environment.get(CONFIGURATION_SECRET_TOKEN) == null || environment.get(CONFIGURATION_SECRET_TOKEN).isEmpty()) {
-            throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingSecretToken");
+        if (isEmpty(secretToken)) {
+            secretToken = environment.get(CONFIGURATION_DPU_SECRET_TOKEN);
+            if (isEmpty(secretToken)) {
+                throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingSecretToken");
+            }
         }
         String userId = dpuContext.getPipelineOwner();
         String pipelineId = String.valueOf(dpuContext.getPipelineId());
 
         String catalogApiLocation = environment.get(CONFIGURATION_CATALOG_API_LOCATION);
-        if (catalogApiLocation == null || catalogApiLocation.isEmpty()) {
-            throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingCatalogApiLocation");
+        if (isEmpty(catalogApiLocation)) {
+            catalogApiLocation = environment.get(CONFIGURATION_DPU_CATALOG_API_LOCATION);
+            if (isEmpty(catalogApiLocation)) {
+                throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingCatalogApiLocation");
+            }
+        }
+
+        Map<String, String> additionalHttpHeaders = new HashMap<>();
+        for (Map.Entry<String, String> configEntry : environment.entrySet()) {
+            if (configEntry.getKey().startsWith(CONFIGURATION_HTTP_HEADER)) {
+                String headerName = configEntry.getKey().replace(CONFIGURATION_HTTP_HEADER, "");
+                String headerValue = configEntry.getValue();
+                additionalHttpHeaders.put(headerName, headerValue);
+            }
         }
 
         if (rdfInput == null) {
@@ -115,6 +144,10 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
 
             uriBuilder.setPath(uriBuilder.getPath());
             HttpPost httpPost = new HttpPost(uriBuilder.build().normalize());
+            for (Map.Entry<String, String> additionalHeader : additionalHttpHeaders.entrySet()) {
+                httpPost.addHeader(additionalHeader.getKey(), additionalHeader.getValue());
+            }
+
             MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create()
                     .addTextBody(PROXY_API_DATA, "{}", ContentType.APPLICATION_JSON.withCharset("UTF-8"))
                     .addTextBody(PROXY_API_PIPELINE_ID, pipelineId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
@@ -189,6 +222,10 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
                     URIBuilder uriBuilder = new URIBuilder(catalogApiLocation);
                     uriBuilder.setPath(uriBuilder.getPath());
                     HttpPost httpPost = new HttpPost(uriBuilder.build().normalize());
+                    for (Map.Entry<String, String> additionalHeader : additionalHttpHeaders.entrySet()) {
+                        httpPost.addHeader(additionalHeader.getKey(), additionalHeader.getValue());
+                    }
+
                     MultipartEntityBuilder builder = MultipartEntityBuilder.create()
                             .addTextBody(PROXY_API_TYPE, PROXY_API_TYPE_RDF, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_STORAGE_ID, storageId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
@@ -239,6 +276,13 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
                 LOG.warn("Error in close", ex);
             }
         }
+    }
+
+    private static boolean isEmpty(String value) {
+        if (value == null || value.isEmpty()) {
+            return true;
+        }
+        return false;
     }
 
     @Override
