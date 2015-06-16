@@ -2,10 +2,8 @@ package eu.unifiedviews.plugins.loader.rdftockan;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -27,12 +25,6 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import org.openrdf.model.Statement;
-import org.openrdf.model.URI;
-import org.openrdf.model.Value;
-import org.openrdf.repository.RepositoryConnection;
-import org.openrdf.repository.RepositoryException;
-import org.openrdf.repository.RepositoryResult;
 import org.openrdf.rio.UnsupportedRDFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,14 +35,11 @@ import eu.unifiedviews.dataunit.rdf.RDFDataUnit;
 import eu.unifiedviews.dpu.DPU;
 import eu.unifiedviews.dpu.DPUContext;
 import eu.unifiedviews.dpu.DPUException;
-import eu.unifiedviews.helpers.dataunit.distribution.Distribution;
-import eu.unifiedviews.helpers.dataunit.distribution.DistributionMerger;
-import eu.unifiedviews.helpers.dataunit.distribution.DistributionToResourceConverter;
-import eu.unifiedviews.helpers.dataunit.distribution.DistributionToStatementsConverter;
 import eu.unifiedviews.helpers.dataunit.rdf.RDFHelper;
 import eu.unifiedviews.helpers.dataunit.resource.Resource;
 import eu.unifiedviews.helpers.dataunit.resource.ResourceConverter;
 import eu.unifiedviews.helpers.dataunit.resource.ResourceHelpers;
+import eu.unifiedviews.helpers.dataunit.resource.ResourceMerger;
 import eu.unifiedviews.helpers.dataunit.virtualgraph.VirtualGraphHelpers;
 import eu.unifiedviews.helpers.dpu.config.ConfigHistory;
 import eu.unifiedviews.helpers.dpu.context.ContextUtils;
@@ -59,6 +48,8 @@ import eu.unifiedviews.helpers.dpu.exec.UserExecContext;
 
 @DPU.AsLoader
 public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
+    public static final String distributionSymbolicName = "distributionMetadata";
+
     public static final String PROXY_API_ACTION = "action";
 
     public static final String PROXY_API_PIPELINE_ID = "pipeline_id";
@@ -174,8 +165,6 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         ContextUtils.sendShortInfo(ctx, "RdfToCkan.execute.start", this.getClass().getSimpleName());
         Map<String, String> environment = dpuContext.getEnvironment();
 
-        Boolean useExtras = Boolean.valueOf(environment.get(CONFIGURATION_USE_EXTRAS));
-
         String secretToken = environment.get(CONFIGURATION_SECRET_TOKEN);
         if (isEmpty(secretToken)) {
             secretToken = environment.get(CONFIGURATION_DPU_SECRET_TOKEN);
@@ -214,22 +203,14 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
             throw ContextUtils.dpuException(ctx, ex1, "RdfToCkan.execute.exception.dataunit");
         }
 
-        Distribution distributionFromRdfInput = null;
+        Resource distributionFromRdfInput = null;
         if (distributionInput != null) {
             if (graphs.size() != 1) {
                 throw ContextUtils.dpuException(this.ctx, "RdfToCkan.execute.exception.tooManyFilesForOneDistribution");
             }
-            RepositoryConnection con = null;
             try {
-                con = distributionInput.getConnection();
-                RepositoryResult<Statement> repositoryResult;
-                repositoryResult = con.getStatements((org.openrdf.model.Resource) null, (URI) null, (Value) null, false, RDFHelper.getGraphsURIArray(distributionInput));
-                List<Statement> statementList = new ArrayList<>();
-                while (repositoryResult.hasNext()) {
-                    statementList.add(repositoryResult.next());
-                }
-                distributionFromRdfInput = DistributionToStatementsConverter.statementsToDistribution(statementList);
-            } catch (RepositoryException | DataUnitException ex) {
+                distributionFromRdfInput = ResourceHelpers.getResource(distributionInput, distributionSymbolicName);
+            } catch (DataUnitException ex) {
                 throw ContextUtils.dpuException(this.ctx, "FilesToCkan.execute.exception.dataunit");
             }
         }
@@ -253,9 +234,8 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
                     String resourceName = null;
                     Resource resource = ResourceHelpers.getResource(rdfInput, graph.getSymbolicName());
                     if (distributionFromRdfInput != null) {
-                        Distribution distributionFromSymbolicName = DistributionToResourceConverter.resourceToDistribution(resource);
-                        Distribution mergedDistribution = DistributionMerger.merge(distributionFromRdfInput, distributionFromSymbolicName);
-                        resource = DistributionToResourceConverter.distributionToResource(mergedDistribution);
+                        Resource mergedDistribution = ResourceMerger.merge(distributionFromRdfInput, resource);
+                        resource = mergedDistribution;
                         if (StringUtils.isEmpty(resourceName)) {
                             resourceName = resource.getName();
                         }
@@ -272,7 +252,7 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
                         resource.setCreated(null);
                     }
                     resource.setName(resourceName);
-                    JsonObjectBuilder resourceBuilder = buildResource(factory, resource, useExtras);
+                    JsonObjectBuilder resourceBuilder = buildResource(factory, resource);
                     if (bResourceExists) {
                         resourceBuilder.add("id", existingResources.get(resourceName));
                     }
@@ -348,15 +328,13 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         outerExecute(ctx, config);
     }
 
-    private JsonObjectBuilder buildResource(JsonBuilderFactory factory, Resource resource, boolean useExtras) {
+    private JsonObjectBuilder buildResource(JsonBuilderFactory factory, Resource resource) {
         JsonObjectBuilder resourceBuilder = factory.createObjectBuilder();
         for (Map.Entry<String, String> mapEntry : ResourceConverter.resourceToMap(resource).entrySet()) {
             resourceBuilder.add(mapEntry.getKey(), mapEntry.getValue());
         }
-        if (useExtras) {
-            for (Map.Entry<String, String> mapEntry : ResourceConverter.extrasToMap(resource.getExtras()).entrySet()) {
-                resourceBuilder.add(mapEntry.getKey(), mapEntry.getValue());
-            }
+        for (Map.Entry<String, String> mapEntry : ResourceConverter.extrasToMap(resource.getExtras()).entrySet()) {
+            resourceBuilder.add(mapEntry.getKey(), mapEntry.getValue());
         }
         if (this.dpuContext.getPipelineExecutionActorExternalId() != null) {
             resourceBuilder.add(CKAN_API_ACTOR_ID, this.dpuContext.getPipelineExecutionActorExternalId());
