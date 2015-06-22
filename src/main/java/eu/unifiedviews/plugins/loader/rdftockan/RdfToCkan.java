@@ -92,8 +92,6 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
 
     public static final String CONFIGURATION_HTTP_HEADER = "org.opendatanode.CKAN.http.header.";
 
-    public static final String CONFIGURATION_USE_EXTRAS = "org.opendatanode.CKAN.use.extras";
-
     private static final Logger LOG = LoggerFactory.getLogger(RdfToCkan.class);
 
     private static final String CKAN_API_ACTOR_ID = "actor_id";
