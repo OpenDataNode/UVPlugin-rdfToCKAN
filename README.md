@@ -20,7 +20,6 @@
 |**org.opendatanode.CKAN.secret.token**    |Token used to authenticate to CKAN, has to be set in backend.properties  |
 |**org.opendatanode.CKAN.api.url** | URL where CKAN api is located, has to be set in backend.properties |
 |**org.opendatanode.CKAN.http.header.[key]** | Custom HTTP header added to requests on CKAN |
-|**org.opendatanode.CKAN.use.extras** | Whether to add also Extras to generated CKAN Resource. Default is false. |
 
 ####Deprecated parameters###
 
@@ -38,7 +37,6 @@ org.opendatanode.CKAN.secret.token = 12345678901234567890123456789012
 org.opendatanode.CKAN.api.url = ﻿http://localhost:9080/internalcatalog/api/action/internal_api
 org.opendatanode.CKAN.http.header.X-Forwarded-Host = www.myopendatanode.org
 org.opendatanode.CKAN.http.header.X-Forwarded-Proto = https
-org.opendatanode.CKAN.use.extras = ﻿false
 ```
 
 ***
@@ -48,6 +46,7 @@ org.opendatanode.CKAN.use.extras = ﻿false
 |Name                |Type       |DataUnit                         |Description                        |
 |--------------------|-----------|---------------------------------|-----------------------------------|
 |filesInput |i |FilesDataUnit |File loaded to specified CKAN instance  |
+|distributionInput |i (optional) |RDFDataUnit | Distribution metadata produced by e-distributionMetadata  |
 
 ***
 
@@ -55,7 +54,7 @@ org.opendatanode.CKAN.use.extras = ﻿false
 
 |Version            |Release notes                                   |
 |-------------------|------------------------------------------------|
-|1.1.0              | Changes in DPU API v 2.1.0, new actor ID parameter is sent to CKAN if available |
+|1.1.0              | Changes in DPU API v 2.1.0, new actor ID parameter is sent to CKAN if available. Input from e-distributionMetadata introduced. |
 |1.0.2              | Added possibility to define custom HTTP headers and unification of config parameters |
 |1.0.1              | bug fixes and update in build dependencies |
 |1.0.0              | First release                                   |
