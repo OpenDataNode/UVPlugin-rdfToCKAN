@@ -15,6 +15,7 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 import javax.json.JsonReaderFactory;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -38,6 +39,7 @@ import eu.unifiedviews.helpers.dataunit.rdf.RDFHelper;
 import eu.unifiedviews.helpers.dataunit.resource.Resource;
 import eu.unifiedviews.helpers.dataunit.resource.ResourceConverter;
 import eu.unifiedviews.helpers.dataunit.resource.ResourceHelpers;
+import eu.unifiedviews.helpers.dataunit.resource.ResourceMerger;
 import eu.unifiedviews.helpers.dataunit.virtualgraph.VirtualGraphHelpers;
 import eu.unifiedviews.helpers.dpu.config.ConfigHistory;
 import eu.unifiedviews.helpers.dpu.context.ContextUtils;
@@ -46,6 +48,8 @@ import eu.unifiedviews.helpers.dpu.exec.UserExecContext;
 
 @DPU.AsLoader
 public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
+    public static final String distributionSymbolicName = "distributionMetadata";
+
     public static final String PROXY_API_ACTION = "action";
 
     public static final String PROXY_API_PIPELINE_ID = "pipeline_id";
@@ -96,6 +100,9 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
 
     @DataUnit.AsInput(name = "rdfInput")
     public RDFDataUnit rdfInput;
+
+    @DataUnit.AsInput(name = "distributionInput", optional = true)
+    public RDFDataUnit distributionInput;
 
     public RdfToCkan() {
         super(RdfToCkanVaadinDialog.class, ConfigHistory.noHistory(RdfToCkanConfig_V1.class));
@@ -187,6 +194,24 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         if (rdfInput == null) {
             throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingInput");
         }
+        Set<RDFDataUnit.Entry> graphs;
+        try {
+            graphs = RDFHelper.getGraphs(rdfInput);
+        } catch (DataUnitException ex1) {
+            throw ContextUtils.dpuException(ctx, ex1, "RdfToCkan.execute.exception.dataunit");
+        }
+
+        Resource distributionFromRdfInput = null;
+        if (distributionInput != null) {
+            if (graphs.size() != 1) {
+                throw ContextUtils.dpuException(this.ctx, "RdfToCkan.execute.exception.tooManyFilesForOneDistribution");
+            }
+            try {
+                distributionFromRdfInput = ResourceHelpers.getResource(distributionInput, distributionSymbolicName);
+            } catch (DataUnitException ex) {
+                throw ContextUtils.dpuException(this.ctx, "FilesToCkan.execute.exception.dataunit");
+            }
+        }
 
         Map<String, String> existingResources = new HashMap<>();
         JsonObject resourceResponsePackageShow = this.packageShow(catalogApiLocation, pipelineId, userId, secretToken, additionalHttpHeaders);
@@ -200,30 +225,34 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         JsonBuilderFactory factory = Json.createBuilderFactory(Collections.<String, Object> emptyMap());
         CloseableHttpClient client = HttpClients.createDefault();
         try {
-            Set<RDFDataUnit.Entry> graphs;
-            try {
-                graphs = RDFHelper.getGraphs(rdfInput);
-            } catch (DataUnitException ex1) {
-                throw ContextUtils.dpuException(ctx, ex1, "RdfToCkan.execute.exception.dataunit");
-            }
             for (RDFDataUnit.Entry graph : graphs) {
                 CloseableHttpResponse responseUpdate = null;
                 boolean bResourceExists = false;
                 try {
-                    String storageId = VirtualGraphHelpers.getVirtualGraph(rdfInput, graph.getSymbolicName());
-                    if (storageId == null || storageId.isEmpty()) {
-                        storageId = graph.getSymbolicName();
-                    }
+                    String resourceName = null;
                     Resource resource = ResourceHelpers.getResource(rdfInput, graph.getSymbolicName());
-                    if (existingResources.containsKey(storageId)) {
+                    if (distributionFromRdfInput != null) {
+                        Resource mergedDistribution = ResourceMerger.merge(distributionFromRdfInput, resource);
+                        resource = mergedDistribution;
+                        if (StringUtils.isEmpty(resourceName)) {
+                            resourceName = resource.getName();
+                        }
+                    }
+                    if (StringUtils.isEmpty(resourceName)) {
+                        resourceName = VirtualGraphHelpers.getVirtualGraph(rdfInput, graph.getSymbolicName());
+                    }
+                    if (StringUtils.isEmpty(resourceName)) {
+                        resourceName = graph.getSymbolicName();
+                    }
+                    if (existingResources.containsKey(resourceName)) {
                         bResourceExists = true;
                         // If resource already exists, created time should not be sent so original created time is preserved
                         resource.setCreated(null);
                     }
-                    resource.setName(storageId);
+                    resource.setName(resourceName);
                     JsonObjectBuilder resourceBuilder = buildResource(factory, resource);
                     if (bResourceExists) {
-                        resourceBuilder.add("id", existingResources.get(storageId));
+                        resourceBuilder.add("id", existingResources.get(resourceName));
                     }
 
                     URIBuilder uriBuilder = new URIBuilder(catalogApiLocation);
@@ -235,7 +264,7 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
 
                     MultipartEntityBuilder builder = MultipartEntityBuilder.create()
                             .addTextBody(PROXY_API_TYPE, PROXY_API_TYPE_RDF, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
-                            .addTextBody(PROXY_API_STORAGE_ID, storageId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
+                            .addTextBody(PROXY_API_STORAGE_ID, resourceName, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_PIPELINE_ID, pipelineId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_USER_ID, userId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_TOKEN, secretToken, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
