@@ -108,7 +108,7 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         super(RdfToCkanVaadinDialog.class, ConfigHistory.noHistory(RdfToCkanConfig_V1.class));
     }
 
-    public JsonObject packageShow(String catalogApiLocation, String pipelineId, String userId, String secretToken, Map<String, String> additionalHttpHeaders) throws DPUException {
+    public JsonObject packageShow(UserExecContext ctx, String catalogApiLocation, String pipelineId, String userId, String secretToken, Map<String, String> additionalHttpHeaders) throws DPUException {
         CloseableHttpResponse response = null;
         try {
             CloseableHttpClient client = HttpClients.createDefault();
@@ -214,7 +214,7 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         }
 
         Map<String, String> existingResources = new HashMap<>();
-        JsonObject resourceResponsePackageShow = this.packageShow(catalogApiLocation, pipelineId, userId, secretToken, additionalHttpHeaders);
+        JsonObject resourceResponsePackageShow = this.packageShow(ctx, catalogApiLocation, pipelineId, userId, secretToken, additionalHttpHeaders);
         JsonArray resources = resourceResponsePackageShow.getJsonObject("result").getJsonArray("resources");
         if (resources != null) {
             for (JsonObject resource : resources.getValuesAs(JsonObject.class)) {
@@ -230,6 +230,7 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
                 boolean bResourceExists = false;
                 try {
                     String resourceName = null;
+                    String storageId = VirtualGraphHelpers.getVirtualGraph(rdfInput, graph.getSymbolicName());
                     Resource resource = ResourceHelpers.getResource(rdfInput, graph.getSymbolicName());
                     if (distributionFromRdfInput != null) {
                         Resource mergedDistribution = ResourceMerger.merge(distributionFromRdfInput, resource);
@@ -264,7 +265,7 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
 
                     MultipartEntityBuilder builder = MultipartEntityBuilder.create()
                             .addTextBody(PROXY_API_TYPE, PROXY_API_TYPE_RDF, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
-                            .addTextBody(PROXY_API_STORAGE_ID, resourceName, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
+                            .addTextBody(PROXY_API_STORAGE_ID, storageId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_PIPELINE_ID, pipelineId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_USER_ID, userId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_TOKEN, secretToken, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
