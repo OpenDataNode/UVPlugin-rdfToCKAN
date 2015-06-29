@@ -1,8 +1,9 @@
-package eu.unifiedviews.plugins.loader.rdftockan;
+package org.opendatanode.plugins.loader.rdftockan;
 
 import eu.unifiedviews.dpu.config.DPUConfigException;
 import eu.unifiedviews.helpers.dpu.vaadin.dialog.AbstractDialog;
 import eu.unifiedviews.helpers.dpu.vaadin.dialog.UserDialogContext;
+import eu.unifiedviews.plugins.loader.rdftockan.RdfToCkanConfig_V1;
 
 /**
  * DPU's configuration dialog. User can use this dialog to configure DPU

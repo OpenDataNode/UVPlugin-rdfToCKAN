@@ -1,4 +1,4 @@
-package eu.unifiedviews.plugins.loader.files2ckan;
+package org.opendatanode.plugins.loader.files2ckan;
 
 import java.util.Collections;
 import java.util.Map;
