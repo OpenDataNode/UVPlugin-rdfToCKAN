@@ -15,6 +15,7 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 import javax.json.JsonReaderFactory;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -38,6 +39,7 @@ import eu.unifiedviews.helpers.dataunit.rdf.RDFHelper;
 import eu.unifiedviews.helpers.dataunit.resource.Resource;
 import eu.unifiedviews.helpers.dataunit.resource.ResourceConverter;
 import eu.unifiedviews.helpers.dataunit.resource.ResourceHelpers;
+import eu.unifiedviews.helpers.dataunit.resource.ResourceMerger;
 import eu.unifiedviews.helpers.dataunit.virtualgraph.VirtualGraphHelpers;
 import eu.unifiedviews.helpers.dpu.config.ConfigHistory;
 import eu.unifiedviews.helpers.dpu.context.ContextUtils;
@@ -46,6 +48,8 @@ import eu.unifiedviews.helpers.dpu.exec.UserExecContext;
 
 @DPU.AsLoader
 public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
+    public static final String distributionSymbolicName = "distributionMetadata";
+
     public static final String PROXY_API_ACTION = "action";
 
     public static final String PROXY_API_PIPELINE_ID = "pipeline_id";
@@ -90,53 +94,22 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
 
     private static final Logger LOG = LoggerFactory.getLogger(RdfToCkan.class);
 
+    private static final String CKAN_API_ACTOR_ID = "actor_id";
+
     private DPUContext dpuContext;
 
     @DataUnit.AsInput(name = "rdfInput")
     public RDFDataUnit rdfInput;
 
+    @DataUnit.AsInput(name = "distributionInput", optional = true)
+    public RDFDataUnit distributionInput;
+
     public RdfToCkan() {
         super(RdfToCkanVaadinDialog.class, ConfigHistory.noHistory(RdfToCkanConfig_V1.class));
     }
 
-    public void outerExecute(UserExecContext ctx, RdfToCkanConfig_V1 config) throws DPUException {
-        this.dpuContext = ctx.getExecMasterContext().getDpuContext();
-        ContextUtils.sendShortInfo(ctx, "RdfToCkan.execute.start", this.getClass().getSimpleName());
-        Map<String, String> environment = dpuContext.getEnvironment();
-
-        String secretToken = environment.get(CONFIGURATION_SECRET_TOKEN);
-        if (isEmpty(secretToken)) {
-            secretToken = environment.get(CONFIGURATION_DPU_SECRET_TOKEN);
-            if (isEmpty(secretToken)) {
-                throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingSecretToken");
-            }
-        }
-        String userId = dpuContext.getPipelineOwner();
-        String pipelineId = String.valueOf(dpuContext.getPipelineId());
-
-        String catalogApiLocation = environment.get(CONFIGURATION_CATALOG_API_LOCATION);
-        if (isEmpty(catalogApiLocation)) {
-            catalogApiLocation = environment.get(CONFIGURATION_DPU_CATALOG_API_LOCATION);
-            if (isEmpty(catalogApiLocation)) {
-                throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingCatalogApiLocation");
-            }
-        }
-
-        Map<String, String> additionalHttpHeaders = new HashMap<>();
-        for (Map.Entry<String, String> configEntry : environment.entrySet()) {
-            if (configEntry.getKey().startsWith(CONFIGURATION_HTTP_HEADER)) {
-                String headerName = configEntry.getKey().replace(CONFIGURATION_HTTP_HEADER, "");
-                String headerValue = configEntry.getValue();
-                additionalHttpHeaders.put(headerName, headerValue);
-            }
-        }
-
-        if (rdfInput == null) {
-            throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingInput");
-        }
-
+    public JsonObject packageShow(UserExecContext ctx, String catalogApiLocation, String pipelineId, String userId, String secretToken, Map<String, String> additionalHttpHeaders) throws DPUException {
         CloseableHttpResponse response = null;
-        Map<String, String> existingResources = new HashMap<>();
         try {
             CloseableHttpClient client = HttpClients.createDefault();
             URIBuilder uriBuilder;
@@ -171,13 +144,7 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
             } else {
                 throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.noDataset");
             }
-
-            JsonArray resources = resourceResponse.getJsonObject("result").getJsonArray("resources");
-            if (resources != null) {
-                for (JsonObject resource : resources.getValuesAs(JsonObject.class)) {
-                    existingResources.put(resource.getString("name"), resource.getString("id"));
-                }
-            }
+            return resourceResponse;
         } catch (URISyntaxException | IllegalStateException | IOException ex) {
             throw ContextUtils.dpuException(ctx, ex, "RdfToCkan.execute.exception.noDataset");
         } finally {
@@ -189,34 +156,104 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
                 }
             }
         }
+    }
+
+    public void outerExecute(UserExecContext ctx, RdfToCkanConfig_V1 config) throws DPUException {
+        this.dpuContext = ctx.getExecMasterContext().getDpuContext();
+        ContextUtils.sendShortInfo(ctx, "RdfToCkan.execute.start", this.getClass().getSimpleName());
+        Map<String, String> environment = dpuContext.getEnvironment();
+
+        String secretToken = environment.get(CONFIGURATION_SECRET_TOKEN);
+        if (isEmpty(secretToken)) {
+            secretToken = environment.get(CONFIGURATION_DPU_SECRET_TOKEN);
+            if (isEmpty(secretToken)) {
+                throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingSecretToken");
+            }
+        }
+        String userId = (this.dpuContext.getPipelineExecutionOwnerExternalId() != null) ? this.dpuContext.getPipelineExecutionOwnerExternalId()
+                : this.dpuContext.getPipelineExecutionOwner();
+        String pipelineId = String.valueOf(dpuContext.getPipelineId());
+
+        String catalogApiLocation = environment.get(CONFIGURATION_CATALOG_API_LOCATION);
+        if (isEmpty(catalogApiLocation)) {
+            catalogApiLocation = environment.get(CONFIGURATION_DPU_CATALOG_API_LOCATION);
+            if (isEmpty(catalogApiLocation)) {
+                throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingCatalogApiLocation");
+            }
+        }
+
+        Map<String, String> additionalHttpHeaders = new HashMap<>();
+        for (Map.Entry<String, String> configEntry : environment.entrySet()) {
+            if (configEntry.getKey().startsWith(CONFIGURATION_HTTP_HEADER)) {
+                String headerName = configEntry.getKey().replace(CONFIGURATION_HTTP_HEADER, "");
+                String headerValue = configEntry.getValue();
+                additionalHttpHeaders.put(headerName, headerValue);
+            }
+        }
+
+        if (rdfInput == null) {
+            throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingInput");
+        }
+        Set<RDFDataUnit.Entry> graphs;
+        try {
+            graphs = RDFHelper.getGraphs(rdfInput);
+        } catch (DataUnitException ex1) {
+            throw ContextUtils.dpuException(ctx, ex1, "RdfToCkan.execute.exception.dataunit");
+        }
+
+        Resource distributionFromRdfInput = null;
+        if (distributionInput != null) {
+            if (graphs.size() != 1) {
+                throw ContextUtils.dpuException(this.ctx, "RdfToCkan.execute.exception.tooManyFilesForOneDistribution");
+            }
+            try {
+                distributionFromRdfInput = ResourceHelpers.getResource(distributionInput, distributionSymbolicName);
+            } catch (DataUnitException ex) {
+                throw ContextUtils.dpuException(this.ctx, "FilesToCkan.execute.exception.dataunit");
+            }
+        }
+
+        Map<String, String> existingResources = new HashMap<>();
+        JsonObject resourceResponsePackageShow = this.packageShow(ctx, catalogApiLocation, pipelineId, userId, secretToken, additionalHttpHeaders);
+        JsonArray resources = resourceResponsePackageShow.getJsonObject("result").getJsonArray("resources");
+        if (resources != null) {
+            for (JsonObject resource : resources.getValuesAs(JsonObject.class)) {
+                existingResources.put(resource.getString("name"), resource.getString("id"));
+            }
+        }
 
         JsonBuilderFactory factory = Json.createBuilderFactory(Collections.<String, Object> emptyMap());
         CloseableHttpClient client = HttpClients.createDefault();
         try {
-            Set<RDFDataUnit.Entry> graphs;
-            try {
-                graphs = RDFHelper.getGraphs(rdfInput);
-            } catch (DataUnitException ex1) {
-                throw ContextUtils.dpuException(ctx, ex1, "RdfToCkan.execute.exception.dataunit");
-            }
             for (RDFDataUnit.Entry graph : graphs) {
                 CloseableHttpResponse responseUpdate = null;
                 boolean bResourceExists = false;
                 try {
+                    String resourceName = null;
                     String storageId = VirtualGraphHelpers.getVirtualGraph(rdfInput, graph.getSymbolicName());
-                    if (storageId == null || storageId.isEmpty()) {
-                        storageId = graph.getSymbolicName();
-                    }
                     Resource resource = ResourceHelpers.getResource(rdfInput, graph.getSymbolicName());
-                    if (existingResources.containsKey(storageId)) {
+                    if (distributionFromRdfInput != null) {
+                        Resource mergedDistribution = ResourceMerger.merge(distributionFromRdfInput, resource);
+                        resource = mergedDistribution;
+                        if (StringUtils.isEmpty(resourceName)) {
+                            resourceName = resource.getName();
+                        }
+                    }
+                    if (StringUtils.isEmpty(resourceName)) {
+                        resourceName = VirtualGraphHelpers.getVirtualGraph(rdfInput, graph.getSymbolicName());
+                    }
+                    if (StringUtils.isEmpty(resourceName)) {
+                        resourceName = graph.getSymbolicName();
+                    }
+                    if (existingResources.containsKey(resourceName)) {
                         bResourceExists = true;
                         // If resource already exists, created time should not be sent so original created time is preserved
                         resource.setCreated(null);
                     }
-                    resource.setName(storageId);
+                    resource.setName(resourceName);
                     JsonObjectBuilder resourceBuilder = buildResource(factory, resource);
                     if (bResourceExists) {
-                        resourceBuilder.add("id", existingResources.get(storageId));
+                        resourceBuilder.add("id", existingResources.get(resourceName));
                     }
 
                     URIBuilder uriBuilder = new URIBuilder(catalogApiLocation);
@@ -297,6 +334,9 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         }
         for (Map.Entry<String, String> mapEntry : ResourceConverter.extrasToMap(resource.getExtras()).entrySet()) {
             resourceBuilder.add(mapEntry.getKey(), mapEntry.getValue());
+        }
+        if (this.dpuContext.getPipelineExecutionActorExternalId() != null) {
+            resourceBuilder.add(CKAN_API_ACTOR_ID, this.dpuContext.getPipelineExecutionActorExternalId());
         }
 
         return resourceBuilder;

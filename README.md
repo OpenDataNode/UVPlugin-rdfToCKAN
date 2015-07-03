@@ -46,6 +46,7 @@ org.opendatanode.CKAN.http.header.X-Forwarded-Proto = https
 |Name                |Type       |DataUnit                         |Description                        |
 |--------------------|-----------|---------------------------------|-----------------------------------|
 |filesInput |i |FilesDataUnit |File loaded to specified CKAN instance  |
+|distributionInput |i (optional) |RDFDataUnit | Distribution metadata produced by e-distributionMetadata  |
 
 ***
 
@@ -53,6 +54,7 @@ org.opendatanode.CKAN.http.header.X-Forwarded-Proto = https
 
 |Version            |Release notes                                   |
 |-------------------|------------------------------------------------|
+|1.1.0              | Changes in DPU API v 2.1.0, new actor ID parameter is sent to CKAN if available. Input from e-distributionMetadata introduced. |
 |1.0.2              | Added possibility to define custom HTTP headers and unification of config parameters |
 |1.0.1              | bug fixes and update in build dependencies |
 |1.0.0              | First release                                   |
