@@ -231,6 +231,9 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
                 try {
                     String resourceName = null;
                     String storageId = VirtualGraphHelpers.getVirtualGraph(rdfInput, graph.getSymbolicName());
+                    if (config.getResourceName() != null) {
+                        resourceName = config.getResourceName();
+                    }
                     Resource resource = ResourceHelpers.getResource(rdfInput, graph.getSymbolicName());
                     if (distributionFromRdfInput != null) {
                         Resource mergedDistribution = ResourceMerger.merge(distributionFromRdfInput, resource);
