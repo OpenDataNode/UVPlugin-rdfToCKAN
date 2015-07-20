@@ -1,4 +1,4 @@
-package eu.unifiedviews.plugins.loader.rdftockan;
+package org.opendatanode.plugins.loader.rdftockan;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -45,6 +45,7 @@ import eu.unifiedviews.helpers.dpu.config.ConfigHistory;
 import eu.unifiedviews.helpers.dpu.context.ContextUtils;
 import eu.unifiedviews.helpers.dpu.exec.AbstractDpu;
 import eu.unifiedviews.helpers.dpu.exec.UserExecContext;
+import eu.unifiedviews.plugins.loader.rdftockan.RdfToCkanConfig_V1;
 
 @DPU.AsLoader
 public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
