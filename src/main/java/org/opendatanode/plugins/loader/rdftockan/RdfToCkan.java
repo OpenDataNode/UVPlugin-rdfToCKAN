@@ -237,6 +237,9 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
                 try {
                     String resourceName = null;
                     String storageId = VirtualGraphHelpers.getVirtualGraph(rdfInput, graph.getSymbolicName());
+                    if (storageId == null) {
+                        LOG.warn("Skipping entry {}, since it does not have VirtualGraph set. Was it loaded to RDF Store before entering this DPU (l-rdfToVirtuoso)?");
+                    }
                     if (config.getResourceName() != null) {
                         resourceName = config.getResourceName();
                     }
