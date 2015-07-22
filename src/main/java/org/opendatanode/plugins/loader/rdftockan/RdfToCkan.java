@@ -1,4 +1,4 @@
-package eu.unifiedviews.plugins.loader.rdftockan;
+package org.opendatanode.plugins.loader.rdftockan;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -45,6 +45,7 @@ import eu.unifiedviews.helpers.dpu.config.ConfigHistory;
 import eu.unifiedviews.helpers.dpu.context.ContextUtils;
 import eu.unifiedviews.helpers.dpu.exec.AbstractDpu;
 import eu.unifiedviews.helpers.dpu.exec.UserExecContext;
+import eu.unifiedviews.plugins.loader.rdftockan.RdfToCkanConfig_V1;
 
 @DPU.AsLoader
 public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
@@ -73,6 +74,8 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
     public static final String CKAN_API_RESOURCE_UPDATE = "resource_update";
 
     public static final String CKAN_API_RESOURCE_CREATE = "resource_create";
+
+    public static final String CKAN_API_RESOURCE_RDF_FORMAT = "RDF";
 
     /**
      * @deprecated Global configuration should be used {@link CONFIGURATION_SECRET_TOKEN}
@@ -108,7 +111,8 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         super(RdfToCkanVaadinDialog.class, ConfigHistory.noHistory(RdfToCkanConfig_V1.class));
     }
 
-    public JsonObject packageShow(UserExecContext ctx, String catalogApiLocation, String pipelineId, String userId, String secretToken, Map<String, String> additionalHttpHeaders) throws DPUException {
+    public JsonObject packageShow(UserExecContext ctx, String catalogApiLocation, String pipelineId, String userId, String secretToken,
+            Map<String, String> additionalHttpHeaders) throws DPUException {
         CloseableHttpResponse response = null;
         try {
             CloseableHttpClient client = HttpClients.createDefault();
@@ -170,7 +174,8 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
                 throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingSecretToken");
             }
         }
-        String userId = (this.dpuContext.getPipelineExecutionOwnerExternalId() != null) ? this.dpuContext.getPipelineExecutionOwnerExternalId()
+        String userId = (this.dpuContext.getPipelineExecutionOwnerExternalId() != null) ? this.dpuContext
+                .getPipelineExecutionOwnerExternalId()
                 : this.dpuContext.getPipelineExecutionOwner();
         String pipelineId = String.valueOf(dpuContext.getPipelineId());
 
@@ -214,7 +219,8 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         }
 
         Map<String, String> existingResources = new HashMap<>();
-        JsonObject resourceResponsePackageShow = this.packageShow(ctx, catalogApiLocation, pipelineId, userId, secretToken, additionalHttpHeaders);
+        JsonObject resourceResponsePackageShow = this.packageShow(ctx, catalogApiLocation, pipelineId, userId, secretToken,
+                additionalHttpHeaders);
         JsonArray resources = resourceResponsePackageShow.getJsonObject("result").getJsonArray("resources");
         if (resources != null) {
             for (JsonObject resource : resources.getValuesAs(JsonObject.class)) {
@@ -257,6 +263,7 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
                         resource.setCreated(null);
                     }
                     resource.setName(resourceName);
+                    resource.setFormat(CKAN_API_RESOURCE_RDF_FORMAT);
                     JsonObjectBuilder resourceBuilder = buildResource(factory, resource);
                     if (bResourceExists) {
                         resourceBuilder.add("id", existingResources.get(resourceName));
@@ -269,13 +276,15 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
                         httpPost.addHeader(additionalHeader.getKey(), additionalHeader.getValue());
                     }
 
-                    MultipartEntityBuilder builder = MultipartEntityBuilder.create()
+                    MultipartEntityBuilder builder = MultipartEntityBuilder
+                            .create()
                             .addTextBody(PROXY_API_TYPE, PROXY_API_TYPE_RDF, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_STORAGE_ID, storageId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_PIPELINE_ID, pipelineId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_USER_ID, userId, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                             .addTextBody(PROXY_API_TOKEN, secretToken, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
-                            .addTextBody(PROXY_API_DATA, resourceBuilder.build().toString(), ContentType.APPLICATION_JSON.withCharset("UTF-8"));
+                            .addTextBody(PROXY_API_DATA, resourceBuilder.build().toString(),
+                                    ContentType.APPLICATION_JSON.withCharset("UTF-8"));
 
                     if (bResourceExists) {
                         builder.addTextBody(PROXY_API_ACTION, CKAN_API_RESOURCE_UPDATE, ContentType.TEXT_PLAIN.withCharset("UTF-8"));
