@@ -1,5 +1,13 @@
 package eu.unifiedviews.plugins.loader.rdftockan;
 
 public class RdfToCkanConfig_V1 {
-    // No configuration for this DPU
+    private String resourceName = null;
+
+    public String getResourceName() {
+        return resourceName;
+    }
+
+    public void setResourceName(String resourceName) {
+        this.resourceName = resourceName;
+    }
 }
