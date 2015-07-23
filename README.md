@@ -1,27 +1,24 @@
-# L-RdfToCkan #
+L-RdfToCkan
 ----------
 
-###General###
+### Documentation
 
-|                              |                                                               |
-|------------------------------|---------------------------------------------------------------|
-|**Name:**                     |L-RdfToCkan                                             |
-|**Description:**              |Loads graphs metadata to the specified CKAN instance. |
-|                              |                                                               |
-|**DPU class name:**           |RdfToCkan     |
-|**Configuration class name:** |RdfToCkanConfig_V1                           |
-|**Dialogue class name:**      |RdfToCkanVaadinDialog |
+Loads graphs metadata to the specified CKAN instance. |
 
-***
+### Dialog configuration parameters
 
-###Configuration parameters###
+|Parameter                        |Description                             |
+|---------------------------------|----------------------------------------|
+|**CKAN resource name** |Resource name to create in CKAN, this has precedence over input from e-distributionMetadata, and if even that is not set, it will use VirtualPath or symbolic name as resource name. |
+
+### Configuration parameters
 |Parameter                             |Description                             |
 |--------------------------------------|----------------------------------------|
 |**org.opendatanode.CKAN.secret.token**    |Token used to authenticate to CKAN, has to be set in backend.properties  |
 |**org.opendatanode.CKAN.api.url** | URL where CKAN api is located, has to be set in backend.properties |
 |**org.opendatanode.CKAN.http.header.[key]** | Custom HTTP header added to requests on CKAN |
 
-####Deprecated parameters###
+#### Deprecated parameters
 
 These parameters are deprecated and kept only for backward compatibility with version 1.0.X.
 They will be removed in 1.1.0 of DPU.
@@ -31,7 +28,7 @@ They will be removed in 1.1.0 of DPU.
 |**dpu.uv-l-rdfToCkan.secret.token**    | alias to _org.opendatanode.CKAN.secret.token_  |
 |**dpu.uv-l-rdfToCkan.catalog.api.url** | alias to _org.opendatanode.CKAN.api.url_ |
 
-####Examples####
+#### Examples
 ```INI
 org.opendatanode.CKAN.secret.token = 12345678901234567890123456789012
 org.opendatanode.CKAN.api.url = ﻿http://localhost:9080/internalcatalog/api/action/internal_api
@@ -39,32 +36,32 @@ org.opendatanode.CKAN.http.header.X-Forwarded-Host = www.myopendatanode.org
 org.opendatanode.CKAN.http.header.X-Forwarded-Proto = https
 ```
 
-***
-
-### Inputs and outputs ###
+### Inputs and outputs
 
 |Name                |Type       |DataUnit                         |Description                        |
 |--------------------|-----------|---------------------------------|-----------------------------------|
 |filesInput |i |FilesDataUnit |File loaded to specified CKAN instance  |
 |distributionInput |i (optional) |RDFDataUnit | Distribution metadata produced by e-distributionMetadata  |
 
-***
+### Version history
 
-### Version history ###
+#### v1.1.1
+* resource name configuration value added
+* DPU sends resource format RDF to CKAN
+* DPU code / artifact moved to org.opendatanode.plugins
 
-|Version            |Release notes                                   |
-|-------------------|------------------------------------------------|
-|1.1.0              | Changes in DPU API v 2.1.0, new actor ID parameter is sent to CKAN if available. Input from e-distributionMetadata introduced. |
-|1.0.2              | Added possibility to define custom HTTP headers and unification of config parameters |
-|1.0.1              | bug fixes and update in build dependencies |
-|1.0.0              | First release                                   |
+#### v1.1.0
+* Changes in DPU API v 2.1.0
+* new actor ID parameter is sent to CKAN if available
+* Input from e-distributionMetadata introduced
 
+#### v1.0.2
+* Added possibility to define custom HTTP headers and unification of config parameters
 
-***
+#### v1.0.1
+* bug fixes and update in build dependencies
 
-### Developer's notes ###
+#### v1.0.0
+* First release                                   |
 
-|Author            |Notes                 |
-|------------------|----------------------|
-|N/A               |N/A                   |
-
+### Developer's notes
