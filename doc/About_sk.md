@@ -4,7 +4,7 @@ Nahrá metadáta o grafoch do CKAN inštancie
 
 ### Konfiguračné parametre
 
-| Name | Description |
+| Meno | Popis |
 |:----|:----|
 |**Názov zdroja CKAN** | Názov zdroja vytvoreného v CKAN, má prednosť pred vstupom z e-distributionMetadata, a aj v prípade, ak nie je zadaný, použije virtuálnu cestu alebo symbolické meno ako názov zdroja|
 
