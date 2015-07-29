@@ -77,18 +77,6 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
 
     public static final String CKAN_API_RESOURCE_RDF_FORMAT = "RDF";
 
-    /**
-     * @deprecated Global configuration should be used {@link CONFIGURATION_SECRET_TOKEN}
-     */
-    @Deprecated
-    public static final String CONFIGURATION_DPU_SECRET_TOKEN = "dpu.uv-l-rdfToCkan.secret.token";
-
-    /**
-     * @deprecated Global configuration should be used {@link CONFIGURATION_CATALOG_API_LOCATION}
-     */
-    @Deprecated
-    public static final String CONFIGURATION_DPU_CATALOG_API_LOCATION = "dpu.uv-l-rdfToCkan.catalog.api.url";
-
     public static final String CONFIGURATION_SECRET_TOKEN = "org.opendatanode.CKAN.secret.token";
 
     public static final String CONFIGURATION_CATALOG_API_LOCATION = "org.opendatanode.CKAN.api.url";
@@ -169,10 +157,7 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
 
         String secretToken = environment.get(CONFIGURATION_SECRET_TOKEN);
         if (isEmpty(secretToken)) {
-            secretToken = environment.get(CONFIGURATION_DPU_SECRET_TOKEN);
-            if (isEmpty(secretToken)) {
-                throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingSecretToken");
-            }
+            throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingSecretToken");
         }
         String userId = (this.dpuContext.getPipelineExecutionOwnerExternalId() != null) ? this.dpuContext
                 .getPipelineExecutionOwnerExternalId()
@@ -181,10 +166,7 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
 
         String catalogApiLocation = environment.get(CONFIGURATION_CATALOG_API_LOCATION);
         if (isEmpty(catalogApiLocation)) {
-            catalogApiLocation = environment.get(CONFIGURATION_DPU_CATALOG_API_LOCATION);
-            if (isEmpty(catalogApiLocation)) {
-                throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingCatalogApiLocation");
-            }
+            throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingCatalogApiLocation");
         }
 
         Map<String, String> additionalHttpHeaders = new HashMap<>();
