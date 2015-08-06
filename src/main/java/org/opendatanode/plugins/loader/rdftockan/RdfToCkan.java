@@ -99,6 +99,26 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         super(RdfToCkanVaadinDialog.class, ConfigHistory.noHistory(RdfToCkanConfig_V1.class));
     }
 
+    /**
+     * This method retrieves JsonObject for package in CKAN.
+     * This method is public, since it is used from at least one outside location https://github.com/OpenDataNode/UVPlugin-rdfToVirtuosoAndCkan
+     * Please take this into account when changing method interface
+     * 
+     * @param ctx
+     *            context
+     * @param catalogApiLocation
+     *            location of catalog
+     * @param pipelineId
+     *            id of pipeline
+     * @param userId
+     *            id of user
+     * @param secretToken
+     *            secret token
+     * @param additionalHttpHeaders
+     *            headers
+     * @return JsonObject as in CKAN Action3 API
+     * @throws DPUException
+     */
     public JsonObject packageShow(UserExecContext ctx, String catalogApiLocation, String pipelineId, String userId, String secretToken,
             Map<String, String> additionalHttpHeaders) throws DPUException {
         CloseableHttpResponse response = null;
@@ -150,6 +170,17 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         }
     }
 
+    /**
+     * This method executes main part of DPU
+     * This method is public, since it is used from at least one outside location https://github.com/OpenDataNode/UVPlugin-rdfToVirtuosoAndCkan
+     * Please take this into account when changing method interface
+     * 
+     * @param ctx
+     *            context
+     * @param config
+     *            configuration object
+     * @throws DPUException
+     */
     public void outerExecute(UserExecContext ctx, RdfToCkanConfig_V1 config) throws DPUException {
         this.dpuContext = ctx.getExecMasterContext().getDpuContext();
         ContextUtils.sendShortInfo(ctx, "RdfToCkan.execute.start", this.getClass().getSimpleName());
