@@ -77,18 +77,6 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
 
     public static final String CKAN_API_RESOURCE_RDF_FORMAT = "RDF";
 
-    /**
-     * @deprecated Global configuration should be used {@link CONFIGURATION_SECRET_TOKEN}
-     */
-    @Deprecated
-    public static final String CONFIGURATION_DPU_SECRET_TOKEN = "dpu.uv-l-rdfToCkan.secret.token";
-
-    /**
-     * @deprecated Global configuration should be used {@link CONFIGURATION_CATALOG_API_LOCATION}
-     */
-    @Deprecated
-    public static final String CONFIGURATION_DPU_CATALOG_API_LOCATION = "dpu.uv-l-rdfToCkan.catalog.api.url";
-
     public static final String CONFIGURATION_SECRET_TOKEN = "org.opendatanode.CKAN.secret.token";
 
     public static final String CONFIGURATION_CATALOG_API_LOCATION = "org.opendatanode.CKAN.api.url";
@@ -111,6 +99,26 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         super(RdfToCkanVaadinDialog.class, ConfigHistory.noHistory(RdfToCkanConfig_V1.class));
     }
 
+    /**
+     * This method retrieves JsonObject for package in CKAN.
+     * This method is public, since it is used from at least one outside location https://github.com/OpenDataNode/UVPlugin-rdfToVirtuosoAndCkan
+     * Please take this into account when changing method interface
+     * 
+     * @param ctx
+     *            context
+     * @param catalogApiLocation
+     *            location of catalog
+     * @param pipelineId
+     *            id of pipeline
+     * @param userId
+     *            id of user
+     * @param secretToken
+     *            secret token
+     * @param additionalHttpHeaders
+     *            headers
+     * @return JsonObject as in CKAN Action3 API
+     * @throws DPUException
+     */
     public JsonObject packageShow(UserExecContext ctx, String catalogApiLocation, String pipelineId, String userId, String secretToken,
             Map<String, String> additionalHttpHeaders) throws DPUException {
         CloseableHttpResponse response = null;
@@ -162,6 +170,17 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
         }
     }
 
+    /**
+     * This method executes main part of DPU
+     * This method is public, since it is used from at least one outside location https://github.com/OpenDataNode/UVPlugin-rdfToVirtuosoAndCkan
+     * Please take this into account when changing method interface
+     * 
+     * @param ctx
+     *            context
+     * @param config
+     *            configuration object
+     * @throws DPUException
+     */
     public void outerExecute(UserExecContext ctx, RdfToCkanConfig_V1 config) throws DPUException {
         this.dpuContext = ctx.getExecMasterContext().getDpuContext();
         ContextUtils.sendShortInfo(ctx, "RdfToCkan.execute.start", this.getClass().getSimpleName());
@@ -169,10 +188,7 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
 
         String secretToken = environment.get(CONFIGURATION_SECRET_TOKEN);
         if (isEmpty(secretToken)) {
-            secretToken = environment.get(CONFIGURATION_DPU_SECRET_TOKEN);
-            if (isEmpty(secretToken)) {
-                throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingSecretToken");
-            }
+            throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingSecretToken");
         }
         String userId = (this.dpuContext.getPipelineExecutionOwnerExternalId() != null) ? this.dpuContext
                 .getPipelineExecutionOwnerExternalId()
@@ -181,10 +197,7 @@ public class RdfToCkan extends AbstractDpu<RdfToCkanConfig_V1> {
 
         String catalogApiLocation = environment.get(CONFIGURATION_CATALOG_API_LOCATION);
         if (isEmpty(catalogApiLocation)) {
-            catalogApiLocation = environment.get(CONFIGURATION_DPU_CATALOG_API_LOCATION);
-            if (isEmpty(catalogApiLocation)) {
-                throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingCatalogApiLocation");
-            }
+            throw ContextUtils.dpuException(ctx, "RdfToCkan.execute.exception.missingCatalogApiLocation");
         }
 
         Map<String, String> additionalHttpHeaders = new HashMap<>();
