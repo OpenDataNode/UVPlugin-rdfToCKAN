@@ -12,5 +12,5 @@ Loads graphs metadata to the specified CKAN instance
 
 |Name |Type | DataUnit | Description | Mandatory |
 |:--------|:------:|:------:|:-------------|:---------------------:|
-|filesInput |i| FilesDataUnit | File loaded to specified CKAN instance |x|
-|distributionInput |i|RDFDataUnit | Distribution metadata produced by e-distributionMetadata ||
+|rdfInput          |i| RDFDataUnit | RDF graph/graphs, whose metadata should be loaded into CKAN |x|
+|distributionInput |i| RDFDataUnit | Distribution metadata produced by e-distributionMetadata | |

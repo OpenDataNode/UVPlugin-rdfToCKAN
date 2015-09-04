@@ -12,5 +12,5 @@ Nahrá metadáta o grafoch do CKAN inštancie
 
 |Meno |Typ | Dátová hrana | Popis | Povinné |
 |:--------|:------:|:------:|:-------------|:---------------------:|
-|filesInput        |i| FilesDataUnit | Súbor nahraný do príslušnej CKAN inštancie |x|
-|distributionInput |i| RDFDataUnit| Distribučné metadáta vytvorené od e-distributionMetadata ||
+|rdfInput          |vstup| RDFDataUnit | RDF graf/grafy, ktorých metadáta sa majú nahrať do príslušnej CKAN inštancie |áno|
+|distributionInput |vstup| RDFDataUnit | Distribučné metadáta vytvorené od e-distributionMetadata | |
